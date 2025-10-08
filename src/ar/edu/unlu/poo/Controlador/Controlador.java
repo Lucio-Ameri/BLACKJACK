@@ -12,6 +12,7 @@ import ar.edu.unlu.poo.modelo.persistencia.TablaPuntuacion;
 import ar.edu.unlu.poo.vista.Consola.Menu;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -83,9 +84,9 @@ public class Controlador {
     }
 
     public int manoEnTurno(){
-
         List<IManoJugador>manos = jugador.getManosJugadorInterfaz();
         EstadoDeLaMano estado;
+
         for(IManoJugador m: manos){
             estado = m.getEstado();
             if(estado == EstadoDeLaMano.EN_JUEGO || estado == EstadoDeLaMano.TURNO_INICIAL){
@@ -94,6 +95,25 @@ public class Controlador {
         }
 
         return -1;
+    }
+
+    public IManoJugador getManoActual(){
+        List<IManoJugador> manos = jugador.getManosJugadorInterfaz();
+        EstadoDeLaMano estado;
+
+        for(IManoJugador m: manos){
+            estado = m.getEstado();
+
+            if(estado == EstadoDeLaMano.EN_JUEGO || estado == EstadoDeLaMano.TURNO_INICIAL){
+                return (ManoJugador) m;
+            }
+        }
+
+        return null;
+    }
+
+    public List<IManoJugador> getManosJugador(){
+        return jugador.getManosJugadorInterfaz();
     }
 
     private boolean hayJugadoresGuardados(){
@@ -335,26 +355,11 @@ public class Controlador {
         Eventos ev = casino.unirmeALaMesa((Jugador) jugador, monto);
 
         switch (ev){
-            case JUGADOR_NO_ESTA -> {
-                vista.mostrarMenu(null, "JUGADOR NO SE ENCUENTRA EN EL CASINO! ACCION NO REALIZABLE");
-            }
-
-            case LA_MESA_YA_INICIO, SIN_LUGARES_DISPONIBLES ->{
-                vista.mostrarMenu(null, "LA MESA YA INICIO LA RONDA! NO SE PUDO UNIR, INTENTELO MAS TARDE! INSCRIBASE A LA LISTA DE ESPERA!");
-            }
-
-            case JUGADOR_EN_LA_MESA, JUGADOR_YA_INSCRIPTO ->{
-                vista.mostrarMenu(null, "JUGADOR YA EN LA MESA!");
-            }
-
-            case GENTE_ESPERANDO -> {
-                vista.mostrarMenu(null, "DEBE INSCRIBIRSE A LA LISTA DE ESPERA! LA MESA INICIO Y HAY GENTE ESPERANDO!");
-            }
-
-            case SALDO_INSUFICIENTE -> {
-                vista.mostrarMenu(null, "EL MONTO INGRESADO ES MAYOR AL QUE POSEE!");
-            }
-
+            case JUGADOR_NO_ESTA -> vista.mostrarMenu(null, "JUGADOR NO SE ENCUENTRA EN EL CASINO! ACCION NO REALIZABLE");
+            case LA_MESA_YA_INICIO, SIN_LUGARES_DISPONIBLES -> vista.mostrarMenu(null, "LA MESA YA INICIO LA RONDA! NO SE PUDO UNIR, INTENTELO MAS TARDE! INSCRIBASE A LA LISTA DE ESPERA!");
+            case JUGADOR_EN_LA_MESA, JUGADOR_YA_INSCRIPTO -> vista.mostrarMenu(null, "JUGADOR YA EN LA MESA!");
+            case GENTE_ESPERANDO -> vista.mostrarMenu(null, "DEBE INSCRIBIRSE A LA LISTA DE ESPERA! LA MESA INICIO Y HAY GENTE ESPERANDO!");
+            case SALDO_INSUFICIENTE -> vista.mostrarMenu(null, "EL MONTO INGRESADO ES MAYOR AL QUE POSEE!");
             case ACCION_REALIZADA -> {
                 setMesa(casino.getMesa((Jugador) jugador));
                 vista.mostrarMenu(Menu.MESA, null);
@@ -366,9 +371,8 @@ public class Controlador {
         Eventos ev = casino.unirmeALaListaDeEspera((Jugador) jugador, monto);
 
         switch (ev){
-            case JUGADOR_NO_ESTA -> {
-                vista.mostrarMenu(null, "JUGADOR NO SE ENCUENTRA EN EL CASINO! ACCION NO REALIZABLE");
-            }
+            case JUGADOR_NO_ESTA -> vista.mostrarMenu(null, "JUGADOR NO SE ENCUENTRA EN EL CASINO! ACCION NO REALIZABLE");
+
 
             case JUGADOR_EN_LA_MESA -> {
                 vista.mostrarMenu(null, "JUGADOR YA SE ENCUENTRA EN LA MESA");
@@ -394,101 +398,87 @@ public class Controlador {
 
     public void procesarMesa(Menu estado, String entrada){
         switch (estado){
+
             case INSCRIPCIONES -> {
                 switch (entrada){
                     case "1":
-                        if(!jugador.perdio()) {
-                            vista.mostrarMenu(Menu.PEDIR_APUESTA_MANO, null);
-                        }
-                        else{
-                            vista.mostrarMenu(null, "ACCION NO REALIZABLE, NO POSEE DINERO PARA APOSTAR OTRA MANO!");
-                        }
+                        validarSituacionAgregarMano();
                         break;
 
                     case "2":
-                        List<IManoJugador> manos = jugador.getManosJugadorInterfaz();
-                        if(manos.size() == 1){
-                            vista.mostrarMenu(null, "SOLO POSEE UNA SOLA MANO! NO PUEDE REALIZAR DE MOMENTO ESTA ACCION!");
-                        }
-                        else{
-                            vista.mostrarMenu(Menu.ELIMINAR_MANO, null);
-                        }
+                        validarSituacionEliminarMano();
                         break;
 
                     case "3":
-                        Eventos ev = mesa.retirarmeDeLaMesa((Jugador) jugador);
-                        switch (ev){
-                            case JUGADOR_CONFIRMADO -> {
-                                vista.mostrarMenu(null, "ACCION NO REALIZABLE! USTED YA CONFIRMO SU PARTICIPACION, ESPERE A QUE INICIE EL JUEGO!");
-                            }
+                        validarSituacionRetirarme();
+                        break;
 
-                            case LA_MESA_YA_INICIO -> {
-                                vista.mostrarMenu(null, "EL JUEGO YA INICIO! ACCION NO REALIZABLE!");
-                            }
-
-                            case ACCION_REALIZADA -> {
-                                mesa = null;
-                                vista.mostrarMenu(Menu.CASINO, null);
-                            }
+                    case "4":
+                        mesa.confirmarParticipacion((Jugador) jugador);
+                        if(mesa.getEstado() == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES){
+                            vista.mostrarMenu(Menu.ESPERAR, null);
                         }
                         break;
 
-                    case"4":
-                        mesa.confirmarParticipacion((Jugador) jugador);
-                        vista.mostrarMenu(Menu.ESPERANDO, null);
-                        break;
-
                     default:
-                        vista.mostrarMenu(null, "ACCION INVALIDA! DEBE INGRESAR UNA DE LAS ANTERIORMENTE MENCIONADAS...");
+                        vista.mostrarMenu(null, "INGRESO INVALIDO! INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS...");
                         break;
                 }
             }
 
             case REPARTIENDO -> {
-                vista.mostrarMenu(null, "LAS CARTAS SE ESTAN REPARTIENDO, ESPERE A QUE EL DEALER TERMINE DE REPARTIRLAS...");
+                if (mesa.getEstado() == EstadoDeLaMesa.REPARTIENDO_CARTAS) {
+                    vista.mostrarMenu(null, "LAS CARTAS SE ESTAN REPARTIENDO, ESPERE A QUE EL DEALER TERMINE DE REPARTIRLAS...");
+                }
             }
 
-            case TURNO_JUGADOR -> {  falta hacer esto
-                switch (entrada) {
-                    case "1":
-                        break;
+            case TURNO_JUGADOR -> {
+                List<String> requiereMano = Arrays.asList("1","2","3","4","5","6");
+                if (requiereMano.contains(entrada) && getManoActual() == null) {
+                    vista.mostrarMenu(null, "USTED YA JUGO SU TURNO! NO PUEDE REALIZAR ESTA ACCION...");
+                }
 
-                    case "2":
-                        break;
+                else if(requiereMano.contains(entrada) && !mesa.esMiTurno((Jugador) jugador)){
+                    vista.mostrarMenu(null, "NO ES SU TURNO! DEBE ESPERAR A QUE LOS DEMAS JUGADORES TERMINEN DE JUGAR EL SUYO...");
+                }
 
-                    case "3":
-                        break;
+                else {
+                    switch (entrada) {
+                        case "1" -> pedirCarta();
+                        case "2" -> quedarme();
+                        case "3" -> rendirme();
+                        case "4" -> asegurarme();
+                        case "5" -> splitearMano();
+                        case "6" -> doblarMano();
+                        case "7" -> {
+                            if(mesa.getInscriptos().size() != 1) {
+                                vista.mostrarMenu(Menu.JUGADORES_INSCRIPTOS, null);
+                            }
 
-                    case "4":
-                        break;
+                            else{
+                                vista.mostrarMenu(null, "ACCION INVALIDA, DEBIDO A QUE USTED ES EL UNICO INTEGRANTE DEL JUEGO!");
+                            }
+                        }
 
-                    case "5":
-                        break;
-
-                    case "6":
-                        break;
-
-                    case "7":
-                        break;
-
-                    case "8":
-                        break;
-
-                    default:
-                        vista.mostrarMenu(null, "ACCION INVALIDA! DEBE INGRESAR UNA DE LAS ANTERIORMENTE MENCIONADAS...");
-                        break;
+                        default -> vista.mostrarMenu(null, "ACCION INVALIDA! DEBE INGRESAR UNA DE LAS ANTERIORMENTE MENCIONADAS...");
+                    }
                 }
             }
 
             case TURNO_DEALER -> {
-                vista.mostrarMenu(null, "EL DEALER ESTA JUGANDO SU TURNO, ESPERE A QUE TERMINE...");
+                if(mesa.getEstado() == EstadoDeLaMesa.TURNO_DEALER) {
+                    vista.mostrarMenu(null, "EL DEALER ESTA JUGANDO SU TURNO, ESPERE A QUE TERMINE...");
+                }
             }
 
             case GANANCIAS_REPARTIDAS -> {
                 switch (entrada){
                     case "0":
                         mesa.confirmarParticipacion((Jugador) jugador);
-                        vista.mostrarMenu(Menu.ESPERANDO, null);
+
+                        if(mesa.getEstado() == EstadoDeLaMesa.REPARTIENDO_GANANCIAS) {
+                            vista.mostrarMenu(Menu.ESPERAR, null);
+                        }
                         break;
 
                     default:
@@ -519,8 +509,39 @@ public class Controlador {
                 }
             }
 
-            case PEDIR_APUESTA_MANO, PEDIR_APUESTA_CONFIRMACION -> {
-                    falta hacer esto
+            case APOSTAR_MANO, PEDIR_APUESTA_CONFIRMACION -> {
+                if(entrada.equals("-") && estado == Menu.APOSTAR_MANO){
+                    vista.mostrarMenu(Menu.ACCIONES_MESA, null);
+                }
+
+                if(entrada.isEmpty() || !entrada.matches("\\d+(?:[.,]\\d+)?")){
+                    vista.mostrarMenu(null, "INGRESO INVALIDO! INGRESE UN MONTO COMO SE SOLICITO ANTERIORMENTE!");
+                }
+
+                try{
+                    double monto = Double.parseDouble(entrada.replace(',', '.'));
+                    if(monto < 1.0){
+                        vista.mostrarMenu(null, "INGRESO INVALIDO! POR FAVOR, INGRESE UN MONTO >= '$1.0'!");
+                        return;
+                    }
+
+                    switch (estado){
+                        case PEDIR_APUESTA_CONFIRMACION -> {
+                            mesa.confirmarNuevaParticipacion((Jugador) jugador, monto, true);
+
+                            if(mesa.getEstado() == EstadoDeLaMesa.FINALIZANDO_RONDA) {
+                                vista.mostrarMenu(Menu.ESPERAR, null);
+                            }
+                        }
+
+                        case APOSTAR_MANO -> {
+                            sumarMano(monto);
+                        }
+                    }
+                }
+                catch (NumberFormatException e){
+                    vista.mostrarMenu(null, "INGRESO INVALIDO! INGRESE UN MONTO COMO SE SOLICITO ANTERIORMENTE!");
+                }
             }
 
             case ELIMINAR_MANO -> {
@@ -533,8 +554,209 @@ public class Controlador {
                 }
             }
 
-            case ESPERANDO -> {
+            case ESPERAR -> {
                 vista.mostrarMenu(null, "ESPERE A QUE LOS DEMAS JUGADORES CONFIRMEN PARA PODER PASAR AL SIGUIENTE ESTADO...");
+            }
+
+            case JUGADORES_INSCRIPTOS -> {
+                switch (entrada){
+                    case "0" -> vista.mostrarMenu(Menu.ACCIONES_MESA, null);
+                    default -> vista.mostrarMenu(null, "INGRESO INVALIDO! DEBE INGRESAR '0' PARA VOLVER AL MENU DE ACCIONES...");
+                }
+            }
+        }
+    }
+
+    private void validarSituacionAgregarMano(){
+        if(!jugador.perdio()){
+
+            if(!mesa.confirme((Jugador) jugador)){
+
+                if(mesa.getEstado() == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES){
+
+                    if(mesa.hayLugaresDisponibles()){
+                        vista.mostrarMenu(Menu.APOSTAR_MANO, null);
+                    }
+
+                    else{
+                        vista.mostrarMenu(null, "ACCION NO REALIZABLE DEBIDO A QUE NO QUEDAN LUGARES DISPONIBLES EN LA MESA");
+                    }
+                }
+
+                else{
+                    vista.mostrarMenu(null, "ACCION NO REALIZABLE, LA MESA YA INICIO");
+                }
+            }
+
+            else{
+                vista.mostrarMenu(null, "USTED YA CONFIRMO SU PARTICIPACION... ACCION NO REALIZABLE!");
+            }
+        }
+
+        else{
+            vista.mostrarMenu(null, "USTED NO POSEE EL DINERO SUFICIENTE PARA REALIZAR ESTA ACCION!");
+        }
+    }
+
+    private void validarSituacionEliminarMano(){
+
+        if(!mesa.confirme((Jugador) jugador)){
+
+            List<IManoJugador> manos = jugador.getManosJugadorInterfaz();
+            if(manos.size() > 1){
+                vista.mostrarMenu(Menu.ELIMINAR_MANO, null);
+            }
+
+            else{
+                vista.mostrarMenu(null, "ACCION NO REALIZABLE DEBIDO A QUE SOLO POSEE UNA MANO.");
+            }
+        }
+
+        else{
+            vista.mostrarMenu(null, "USTED YA CONFIRMO SU PARTICIPACION... ACCION NO REALIZABLE!");
+        }
+    }
+
+    private void validarSituacionRetirarme(){
+
+        Eventos ev = mesa.retirarmeDeLaMesa((Jugador) jugador);
+
+        switch (ev){
+            case JUGADOR_CONFIRMADO -> {
+                vista.mostrarMenu(null, "ACCION NO REALIZABLE! USTED YA CONFIRMO SU PARTICIPACION, ESPERE A QUE INICIE EL JUEGO!");
+            }
+
+            case LA_MESA_YA_INICIO -> {
+                vista.mostrarMenu(null, "EL JUEGO YA INICIO! ACCION NO REALIZABLE!");
+            }
+
+            case ACCION_REALIZADA -> {
+                mesa = null;
+                vista.mostrarMenu(Menu.CASINO, null);
+            }
+        }
+    }
+
+    private void pedirCarta(){
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.PEDIR_CARTA, (Jugador) jugador, (ManoJugador) getManoActual());
+
+        if(ev == Eventos.NO_ES_SU_TURNO){
+            vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
+        }
+    }
+
+    private void quedarme(){
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.QUEDARME, (Jugador) jugador, (ManoJugador) getManoActual());
+
+        if(ev == Eventos.NO_ES_SU_TURNO){
+            vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
+        }
+    }
+
+    private void rendirme(){
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.RENDIRME, (Jugador) jugador, (ManoJugador) getManoActual());
+
+        switch(ev){
+            case NO_ES_SU_TURNO -> {
+                vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
+            }
+
+            case NO_ES_TURNO_INICIAL -> {
+                vista.mostrarMenu(null, "NO ES EL TURNO INICIAL, NO PUEDE REALIZAR LA ACCION");
+            }
+
+        }
+    }
+
+    private void asegurarme(){
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.ASEGURARME, (Jugador) jugador, (ManoJugador) getManoActual());
+
+        switch (ev){
+            case NO_ES_SU_TURNO -> {
+                vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
+            }
+
+            case NO_ES_TURNO_INICIAL -> {
+                vista.mostrarMenu(null, "NO ES EL TURNO INICIAL, NO PUEDE REALIZAR LA ACCION");
+            }
+
+            case DEALER_NO_CUMPLE -> {
+                vista.mostrarMenu(null, "EL DEALER NO CUMPLE LA CONDICION PARA REALIZAR ESTA ACCION...");
+            }
+
+            case MANO_YA_ASEGURADA -> {
+                vista.mostrarMenu(null, "USTED YA ASEGURO SU MANO, NO PUEDE VOLVER A REALIZAR ESTA ACCION...");
+            }
+
+            case SALDO_INSUFICIENTE -> {
+                vista.mostrarMenu(null, "NO POSEE EL SALDO SUFICIENTE PARA PODER REALIZAR ESTA ACCION...");
+            }
+        }
+    }
+
+    private void splitearMano(){
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.ASEGURARME, (Jugador) jugador, (ManoJugador) getManoActual());
+
+        switch (ev) {
+            case NO_ES_SU_TURNO -> {
+                vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
+            }
+
+            case NO_ES_TURNO_INICIAL -> {
+                vista.mostrarMenu(null, "NO ES EL TURNO INICIAL, NO PUEDE REALIZAR LA ACCION...");
+            }
+
+            case MANO_NO_CUMPLE -> {
+                vista.mostrarMenu(null, "LA MANO NO CUMPLE LA CONDICION PARA SPLITEAR, ACCION NO REALIZABLE...");
+            }
+
+            case SALDO_INSUFICIENTE -> {
+                vista.mostrarMenu(null, "NO TIENE EL SALDO SUFICIENTE PARA PODER REALIZAR LA ACCION...");
+            }
+        }
+    }
+
+    private void doblarMano(){
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.ASEGURARME, (Jugador) jugador, (ManoJugador) getManoActual());
+
+        switch (ev) {
+            case NO_ES_SU_TURNO -> {
+                vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
+            }
+
+            case NO_ES_TURNO_INICIAL -> {
+                vista.mostrarMenu(null, "NO ES EL TURNO INICIAL, NO PUEDE REALIZAR LA ACCION...");
+            }
+
+            case SALDO_INSUFICIENTE -> {
+                vista.mostrarMenu(null, "NO TIENE EL SALDO SUFICIENTE PARA PODER REALIZAR LA ACCION...");
+            }
+        }
+    }
+
+    private void sumarMano(double monto){
+        Eventos ev = mesa.apostarOtraMano((Jugador) jugador, monto);
+
+        switch (ev){
+
+            case JUGADOR_CONFIRMADO -> {
+                vista.mostrarMenu(null, "ACCION NO REALIZABLE... USTED YA CONFIRMO SU PARTICIPACION. INGRESE '-' PARA VOLVER");
+            }
+
+            case LA_MESA_YA_INICIO -> {
+                vista.mostrarMenu(null, "ACCION NO REALIZABLE... LA MESA YA INICIO, INGRESE '-' PARA VOLVER");
+            }
+
+            case SIN_LUGARES_DISPONIBLES -> {
+                vista.mostrarMenu(null, "NO HAY LUGARES DISPONIBLES, NO SE PUDO CREAR LA MANO, INGRESE '-' PARA VOVLER");
+            }
+
+            case SALDO_INSUFICIENTE -> {
+                vista.mostrarMenu(null, "SALDO INSUFICIENTE, INGRESE UN SALDO ACORDE AL MENCIONADO...");
+            }
+
+            case ACCION_REALIZADA -> {
+                vista.mostrarMenu(Menu.ACCIONES_MESA, null);
             }
         }
     }
@@ -543,11 +765,11 @@ public class Controlador {
         List<IManoJugador> manos = jugador.getManosJugadorInterfaz();
 
         if(valor == 0){
-            vista.mostrarMenu(Menu.INSCRIPCIONES, null);
+            vista.mostrarMenu(Menu.ACCIONES_MESA, null);
         }
 
         else if(valor > 0 && valor <= manos.size()){
-            Eventos ev = mesa.retirarUnaMano((Jugador) jugador, (ManoJugador) manos.get(valor));
+            Eventos ev = mesa.retirarUnaMano((Jugador) jugador, (ManoJugador) manos.get(valor - 1));
 
             switch (ev){
                 case JUGADOR_CONFIRMADO -> {

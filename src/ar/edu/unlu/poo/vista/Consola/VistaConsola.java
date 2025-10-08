@@ -5,6 +5,7 @@ import ar.edu.unlu.poo.Controlador.Controlador;
 import ar.edu.unlu.poo.interfaz.IJugador;
 import ar.edu.unlu.poo.interfaz.IVista;
 import ar.edu.unlu.poo.modelo.Casino;
+import ar.edu.unlu.poo.modelo.Mesa;
 
 import javax.swing.*;
 import java.util.EnumMap;
@@ -129,44 +130,49 @@ public class VistaConsola extends JFrame implements IVista {
             if(ventanaMesa.isVisible()){
                 ventanaMesa.mostrarMesa(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.getTurnoJugador(), controler.manoEnTurno());
             }
+
             else{
                 activarMesa();
             }
         });
+
         ejecutador.put(Menu.INSCRIPCIONES, () -> {
-           ventanaMesa.actualizarAreaDeJuego(null, null, controler.getEstadoMesa(), -1);
-           ventanaMesa.imprimirMenuDeAcciones(controler.getJugador(), controler.getEstadoMesa());
-           ventanaMesa.actualizarAreaDeInformacion(null, controler.getEstadoMesa(), null);
+            ventanaMesa.imprimirAreaDeInformacion(null, controler.getEstadoMesa(), null);
+            ventanaMesa.imprimirAreaDeJuego(null, null, controler.getEstadoMesa(), -1);
+            ventanaMesa.imprimirMenuAcciones(controler.getJugador(), controler.getEstadoMesa());
         });
         ejecutador.put(Menu.REPARTIENDO, () -> {
-            ventanaMesa.actualizarAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.manoEnTurno());
-            ventanaMesa.imprimirMenuDeAcciones(null, controler.getEstadoMesa());
-            ventanaMesa.actualizarAreaDeInformacion(null, controler.getEstadoMesa(), null);
+            ventanaMesa.imprimirAreaDeInformacion(null, controler.getEstadoMesa(), null);
+            ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.manoEnTurno());
+            ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
         });
         ejecutador.put(Menu.TURNO_JUGADOR, () -> {
-            ventanaMesa.actualizarAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.manoEnTurno());
-            ventanaMesa.imprimirMenuDeAcciones(controler.getJugador(), controler.getEstadoMesa());
-            ventanaMesa.actualizarAreaDeInformacion(controler.getJugador(), controler.getEstadoMesa(), controler.getTurnoJugador());
+           ventanaMesa.imprimirAreaDeInformacion(controler.getJugador(), controler.getEstadoMesa(), controler.getTurnoJugador());
+           ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.manoEnTurno());
+           ventanaMesa.imprimirMenuAcciones(controler.getJugador(), controler.getEstadoMesa());
         });
         ejecutador.put(Menu.TURNO_DEALER, () -> {
-            ventanaMesa.actualizarAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.manoEnTurno());
-            ventanaMesa.imprimirMenuDeAcciones(null, controler.getEstadoMesa());
-            ventanaMesa.actualizarAreaDeInformacion(null, controler.getEstadoMesa(), null);
+           ventanaMesa.imprimirAreaDeInformacion(null, controler. getEstadoMesa(), null);
+           ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), -1);
+           ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
         });
         ejecutador.put(Menu.GANANCIAS_REPARTIDAS, () -> {
-            ventanaMesa.actualizarAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), -1);
-            ventanaMesa.imprimirMenuDeAcciones(null, controler.getEstadoMesa());
-            ventanaMesa.actualizarAreaDeInformacion(null, controler.getEstadoMesa(), null);
+           ventanaMesa.imprimirAreaDeInformacion(null, controler.getEstadoMesa(), null);
+           ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), -1);
+           ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
         });
-        ejecutador.put(Menu.FINALIZAR, ()-> {
-            ventanaMesa.actualizarAreaDeJuego(controler.getJugador(), null, controler.getEstadoMesa(), -1);
-            ventanaMesa.imprimirMenuDeAcciones(null, controler.getEstadoMesa());
-            ventanaMesa.actualizarAreaDeInformacion(null, controler.getEstadoMesa(), null);
+        ejecutador.put(Menu.FINALIZAR, () -> {
+           ventanaMesa.imprimirAreaDeInformacion(null, controler.getEstadoMesa(), null);
+           ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), null, controler.getEstadoMesa(), -1);
+           ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
         });
-        ejecutador.put(Menu.PEDIR_APUESTA_MANO, () -> ventanaMesa.pedirApuesta(controler.getSaldoJugador(), Menu.PEDIR_APUESTA_MANO));
+        ejecutador.put(Menu.APOSTAR_MANO, () -> ventanaMesa.pedirApuesta(controler.getSaldoJugador(), Menu.APOSTAR_MANO));
         ejecutador.put(Menu.PEDIR_APUESTA_CONFIRMACION, () -> ventanaMesa.pedirApuesta(controler.getSaldoJugador(), Menu.PEDIR_APUESTA_CONFIRMACION));
-        ejecutador.put(Menu.ELIMINAR_MANO, () -> ventanaMesa.eliminarMano(controler.getManosJugador());
-        ejecutador.put(Menu.ESPERANDO, () -> ventanaMesa.esperando());
+        ejecutador.put(Menu.ELIMINAR_MANO, () -> ventanaMesa.eliminarMano(controler.getManosJugador()));
+        ejecutador.put(Menu.ESPERAR, () -> ventanaMesa.aEsperar());
+        ejecutador.put(Menu.JUGADORES_INSCRIPTOS, () -> ventanaMesa.mostrarDatosIncriptos(controler.getInscriptos(), controler.getJugador()));
+        ejecutador.put(Menu.ACCIONES_MESA, () -> ventanaMesa.imprimirMenuAcciones(controler.getJugador(), controler.getEstadoMesa()));
+
     }
 
 

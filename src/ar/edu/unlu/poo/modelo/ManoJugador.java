@@ -105,6 +105,6 @@ public class ManoJugador extends Mano implements IManoJugador, Serializable {
             s += c.descripcion();
         }
 
-        return s + String.format("   TOTAL MANO: [%d] --- ESTADO DE LA MANO: %s %s.\n", getTotalMano(), getEstado(), envite.descripcion());
+        return s + String.format("   TOTAL MANO: [%d] --- \nESTADO DE LA MANO: %s %s.\n", getTotalMano(), getEstado(), envite.descripcion());
     }
 }

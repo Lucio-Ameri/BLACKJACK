@@ -221,24 +221,25 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
     }
 
     public void mostrarMesa(IJugador jugador, IDealer dealer, EstadoDeLaMesa estado, String turno, int manoEnTurno){
-        actualizarAreaDeJuego(jugador, dealer, estado, manoEnTurno);
-        actualizarAreaDeInformacion(jugador, estado, turno);
-        imprimirMenuDeAcciones(jugador, estado);
+        imprimirAreaDeInformacion(jugador, estado, turno);
+        imprimirAreaDeJuego(jugador, dealer, estado, manoEnTurno);
+        imprimirMenuAcciones(jugador, estado);
     }
 
-    public void actualizarAreaDeJuego(IJugador jugador, IDealer dealer, EstadoDeLaMesa estado, int manoEnTurno){
-        areaDeJuego.setText("\n");
+    public void imprimirAreaDeJuego(IJugador jugador, IDealer dealer, EstadoDeLaMesa estado, int manoEnTurno){
+
+        areaDeJuego.setText("\n\n");
 
         switch (estado){
             case ACEPTANDO_INSCRIPCIONES -> {
-                areaDeJuego.append("\n\t\t\t DEALER DICE:\n\n\n");
-                areaDeJuego.append("\t LAS INSCRIPCIONES TODAVIA ESTAN ABIERTAS... PUEDE REALIZAR APUESTAS,\n");
-                areaDeJuego.append("\t ELIMINAR LAS MISMAS, HASTA QUE USTED CONFIRME SU PARTICIPACION... \n");
-                areaDeJuego.append("\t UNA VEZ TODOS CONFIRMEN LA PARTICIPACION Y/O SE ACABEN LOS LUGARES\n");
-                areaDeJuego.append("\t DE LA MESA, EL JUEGO ARRANCARA AUTOMATICAMENTE\n");
+                areaDeJuego.append("\n\t\t\t DEALER INFORMA:\n\n\n");
+                areaDeJuego.append("\t LAS INSCRIPCIONES TODAVIA ESTAN ABIERTAS... PUEDE SEGUIR REALIZANDO APUESTAS,\n");
+                areaDeJuego.append("\t ELIMINAR LAS MISMAS, HASTA QUE USTED CONFIRME SU PARTICIPACION.\n");
+                areaDeJuego.append("\t UNA VEZ QUE TODOS CONFIRMEN LA PARTICIPACION Y/O SE ACABEN LOS LUGARES EN LA MESA\n");
+                areaDeJuego.append("\t EL JUEGO COMENZARA AUTOMATICAMENTE...\n");
             }
 
-            case REPARTIENDO_CARTAS, TURNO_DEALER, TURNO_JUGADOR ->{
+            case REPARTIENDO_CARTAS, TURNO_DEALER, TURNO_JUGADOR -> {
                 areaDeJuego.append(String.format("%s\n\n", dealer.descripcion()));
 
                 List<IManoJugador> manos = jugador.getManosJugadorInterfaz();
@@ -246,12 +247,14 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
 
                 int i = 0;
                 for(IManoJugador m: manos){
-                    if(i == manoEnTurno) {
-                        areaDeJuego.append(String.format("MANO %d <-- EN JUEGO: %s\n", i + 1, m.descripcion()));
+                    if(i == manoEnTurno){
+                        areaDeJuego.append(String.format("MANO %d <--- actual en juego: %s\n", i + 1, m.descripcion()));
                     }
+
                     else{
                         areaDeJuego.append(String.format("MANO %d: %s\n", i + 1, m.descripcion()));
                     }
+
                     i++;
                 }
             }
@@ -263,81 +266,91 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
             }
 
             case FINALIZANDO_RONDA -> {
-                areaDeJuego.append("\n\t\t\t DEALER DICE:\n\n\n");
-                areaDeJuego.append("\t EL JUEGO TERMINO, DESEA JUGAR OTRA PARTIDA? DEBERA INGRESAR UN MONTO\n");
-                areaDeJuego.append(String.format("\t NO NEGATIVO Y NO MAYOR A SU SALDO ACTUAL $%.2f SI DESEA HACERLO...\n", jugador.getSaldoJugador()));
-                areaDeJuego.append("\t SI NO DESEA PARTICIPAR, INGRESE '-' PARA PODER SALIR DE LA MESA...");
+                areaDeJuego.append("\n\t\t\t DEALER INFORMA:\n\n\n");
+                areaDeJuego.append("\t EL JUEGO TERMINO, DESEA JUGAR OTRA PARTIDA? \n");
+                areaDeJuego.append(String.format("\t - EN CASO DE QUERER SEGUIR JUGANDO DEBERA INGRESAR UN MONTO >= $%.2f ...\n", jugador.getSaldoJugador()));
+                areaDeJuego.append("\t - SI NO DESEA HACERLO, INGRESE '-' PARA PODER SALIR DE LA MESA...\n\n");
             }
         }
+
+        mostrarMensajeDeError("");
     }
 
-    public void actualizarAreaDeInformacion(IJugador jugador, EstadoDeLaMesa estado, String turno){
+    public void imprimirAreaDeInformacion(IJugador jugador, EstadoDeLaMesa estado, String turno){
+
         areaDeInformacion.setText("");
 
         switch (estado){
             case ACEPTANDO_INSCRIPCIONES, REPARTIENDO_CARTAS, TURNO_DEALER, REPARTIENDO_GANANCIAS, FINALIZANDO_RONDA -> {
-                areaDeInformacion.setText(String.format("ESTADO DE LA MESA: %s \t TURNO ACTUAL: NO ES TURNO DE NINGUN JUGADOR...", estado));
+                areaDeInformacion.setText(String.format("ESTADO DE LA MESA %s \t\t\t TURNO ACTUAL: NO ES TURNO DE NINGUN JUGADOR...", estado));
             }
 
             case TURNO_JUGADOR -> {
-                if(jugador.getNombre().equals(turno)) {
-                    areaDeInformacion.setText(String.format("ESTADO DE LA MESA: %s \t TURNO ACTUAL: ES SU TURNO '%s'...", estado, turno));
+                if (jugador.getNombre().equals(turno)){
+                    areaDeInformacion.setText(String.format("ESTADO DE LA MESA %s \t\t\t TURNO ACTUAL: ES SU TURNO ' %s '...", estado, turno));
                 }
+
                 else{
-                    areaDeInformacion.setText(String.format("ESTADO DE LA MESA: %s \t TURNO ACTUAL: JUGADOR '%s'...", estado, turno));
+                    areaDeInformacion.setText(String.format("ESTADO DE LA MESA %s \t\t\t TURNO ACTUAL: JUGADOR ' %s '...", estado, turno));
                 }
             }
         }
     }
 
-    public void imprimirMenuDeAcciones(IJugador jugador, EstadoDeLaMesa estado){
+    public void imprimirMenuAcciones(IJugador jugador, EstadoDeLaMesa estado){
 
         areaDeAcciones.setText("\n");
-        headerAcciones.setText("ACCIONES");
+        headerAcciones.setText("ACCIONES:");
 
         switch (estado){
             case ACEPTANDO_INSCRIPCIONES -> {
                 menu = Menu.INSCRIPCIONES;
+
                 areaDeAcciones.append("1.  APOSTAR OTRA MANO.\n");
                 areaDeAcciones.append("2.  RETIRAR UNA APUESTA.\n");
                 areaDeAcciones.append("3.  RETIRARME DE LA MESA.\n");
                 areaDeAcciones.append("4.  CONFIRMAR PARTICIPACION.\n\n\n");
                 areaDeAcciones.append("INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS...\n\n\n\n");
-                areaDeAcciones.append(String.format("\t\tDATOS DE USTED\n\nJUGADOR: %s  \nSALDO ACTUAL: %.2f  \nMAXIMO HISTORICO: %.2f", jugador.getNombre(), jugador.getSaldoJugador(), jugador.getMaximoHistorico()));
+                areaDeAcciones.append(String.format("\t\tLOS DATOS DE USTED:\n\nJUGADOR: %s  \nSALDO ACTUAL: $%.2f  \nMAXIMO HISTORICO: $%.2f", jugador.getNombre(), jugador.getSaldoJugador(), jugador.getMaximoHistorico()));
 
                 actualizarPlaceHolder("INGRESE UNA OPCION MENCIONADA EN EL APARTADO DE ACCIONES...");
             }
 
             case REPARTIENDO_CARTAS -> {
                 menu = Menu.REPARTIENDO;
-                actualizarPlaceHolder("REPARTIENDO CARTAS...");
+
+                actualizarPlaceHolder("LAS CARTAS SE ESTAN REPARTIENDO...");
             }
 
             case TURNO_JUGADOR -> {
                 menu = Menu.TURNO_JUGADOR;
+
                 areaDeAcciones.append("1.   PEDIR CARTA.\n");
                 areaDeAcciones.append("2.   QUEDARME.\n");
                 areaDeAcciones.append("3.   RENDIRME.\n");
                 areaDeAcciones.append("4.   ASEGURARME.\n");
                 areaDeAcciones.append("5.   SPLITEAR MANO.\n");
                 areaDeAcciones.append("6.   DOBLAR MANO.\n");
-                areaDeAcciones.append("7.   MOSTRAR MANOS DE LOS DEMAS JUGADORES.\n");
-                areaDeAcciones.append("8.   LISTA DE PARTICIPANTES.\n\n\n");
+                areaDeAcciones.append("7.   MOSTRAR A LOS DEMAS JUGADORES.\n");
                 areaDeAcciones.append("INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS...\n\n");
-                areaDeAcciones.append(String.format("\t\tDATOS DE USTED\n\nJUGADOR: %s  \nSALDO ACTUAL: %.2f  \nMAXIMO HISTORICO: %.2f", jugador.getNombre(), jugador.getSaldoJugador(), jugador.getMaximoHistorico()));
+                areaDeAcciones.append(String.format("\t\tLOS DATOS DE USTED\n\nJUGADOR: %s  \nSALDO ACTUAL: $%.2f  \nMAXIMO HISTORICO: $%.2f", jugador.getNombre(), jugador.getSaldoJugador(), jugador.getMaximoHistorico()));
 
                 actualizarPlaceHolder("INGRESE UNA OPCION MENCIONADA EN EL APARTADO DE ACCIONES...");
             }
 
             case TURNO_DEALER -> {
                 menu = Menu.TURNO_DEALER;
-                actualizarPlaceHolder("DEALER JUEGA SU TURNO...");
+
+                areaDeAcciones.setText("\n");
+                areaDeAcciones.append("EL DEALER ESTA JUGANDO SU TURNO, ESPERE A QUE TERMINE...");
+
+                actualizarPlaceHolder("DEALER JUEGA ESTA JUGANDO SU TURNO...");
             }
 
             case REPARTIENDO_GANANCIAS -> {
                 menu = Menu.GANANCIAS_REPARTIDAS;
 
-                areaDeAcciones.append("LAS GANANCIAS FUERON REPARTIDAS EN BASE A ESTOS RESULTADOS...\n");
+                areaDeAcciones.append("LAS GANANCIAS FUERON REPARTIDAS EN BASE A LOS RESULTADOS MOSTRADOS...\n");
                 areaDeAcciones.append("INGRESE '0' PARA PODER PASAR AL SIGUIENTE ESTADO Y PODER FINALIZAR LA PARTIDA\n");
 
                 actualizarPlaceHolder("INGRESE '0' PARA CONTINUAR...");
@@ -345,6 +358,7 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
 
             case FINALIZANDO_RONDA -> {
                 menu = Menu.FINALIZAR;
+
                 actualizarPlaceHolder("INGRESE EL MONTO INDICADO PARA PARTICIPAR o '-' PARA SALIR...");
             }
         }
@@ -352,28 +366,27 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
         mostrarMensajeDeError("");
     }
 
-    public void esperando(){
-        menu = Menu.ESPERANDO;
-        areaDeAcciones.setText("\n");
-        areaDeAcciones.append("ESPERANDO A QUE LOS DEMAS JUGADORES CONFIRMEN PARA PODER CONTINUAR...");
-        actualizarPlaceHolder("");
-        mostrarMensajeDeError("");
-    }
-
-    public void pedirApuesta(double monto, Menu estado){
+    public void pedirApuesta(double saldo, Menu estado){
         menu = estado;
 
         areaDeAcciones.setText("\n");
 
-        if(estado == Menu.INSCRIPCIONES){
-            headerAcciones.setText("VALIDAR APUESTA:");
+        areaDeAcciones.append("INGRESE UN UN MONTO NO NEGATIVO. CUALQUIER\n");
+        areaDeAcciones.append("OTRO INGRESO SERA TOMADO COMO INVALIDO. TENGA EN CUENTA \n");
+        areaDeAcciones.append(String.format("QUE SU SALDO ACTUAL ES %.2f\n", saldo));
+        areaDeAcciones.append("Y CUALQUIER VALOR MAYOR A ESTE TAMBIEN SERA INVALIDO...\n\n\n");
 
-            areaDeAcciones.append("\tINGRESE UN UN MONTO NO NEGATIVO. CUALQUIER OTRO INGRESO SERA \n");
-            areaDeAcciones.append(String.format("\tTOMADO COMO INVALIDO. TENGA EN CUENTA QUE SU SALDO ACTUAL ES %.2f\n", monto));
-            areaDeAcciones.append("\tY CUALQUIER VALOR MAYOR A ESTE TAMBIEN SERA INVALIDO...\n\n\n");
-            areaDeAcciones.append("\t\t INGRESE '-' PARA VOLVER AL MENU DE ACCIONES.\n\n");
+        if(estado == Menu.APOSTAR_MANO){
+            headerAcciones.setText("VALIDAR APUESTA:");
+            areaDeAcciones.append("\t INGRESE '-' PARA VOLVER AL MENU DE ACCIONES.\n\n");
 
             actualizarPlaceHolder("INGRESE EL MONTO o '-'...");
+        }
+
+        else{
+            headerAcciones.setText("CONFIRMAR PARTICIPACION:");
+
+            actualizarPlaceHolder("INGRESE EL MONTO SOLICITADO...");
         }
 
         mostrarMensajeDeError("");
@@ -382,25 +395,63 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
     public void eliminarMano(List<IManoJugador> manos){
         menu = Menu.ELIMINAR_MANO;
 
+        headerAcciones.setText("ELIMINAR UNA MANO:");
+
         areaDeAcciones.setText("\n");
 
         int i = 1;
-
-        headerAcciones.setText("ELIMINAR UNA MANO:");
         for(IManoJugador m: manos){
             double apostado = m.getEnviteInterfaz().getMontoApostado();
-            areaDeAcciones.append(String.format("MANO %d: APUESTA: $%.2f\n", i, apostado));
+            areaDeAcciones.append(String.format("MANO %d: .... APOSTADO: %.2f\n", i, apostado));
             i++;
         }
-        areaDeAcciones.append("0.  PARA NO ELIMINAR NINGUNA Y VOLVER AL MENU ACCIONES...");
 
-        areaDeAcciones.append("\n\n INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS...");
-        actualizarPlaceHolder("INGRESE EL NUMERO DE LA MANO A ELIMINAR...");
+        areaDeAcciones.append("0. VOLVER AL MENU DE ACCIONES.\n\n");
+        areaDeAcciones.append("INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIOANDAS...");
+
+        mostrarMensajeDeError("");
+
+        actualizarPlaceHolder("INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS...");
     }
 
-    public void mostrarManosDeLosInscriptos(List<IJugador> inscriptos){
+    public void aEsperar(){
+        menu = Menu.ESPERAR;
 
+        areaDeAcciones.setText("\n");
+        areaDeAcciones.append("ESPERANDO A QUE LOS DEMAS JUGADORES CONFIRMEN PARA PODER CONTINUAR...");
 
+        actualizarPlaceHolder("");
+
+        mostrarMensajeDeError("");
     }
 
+    public void mostrarDatosIncriptos(List<IJugador> inscriptos, IJugador jugador){
+        menu = Menu.JUGADORES_INSCRIPTOS;
+
+        headerAcciones.setText("DATOS DE LOS INSCRIPTOS:");
+        areaDeAcciones.setText("\n");
+
+        for(IJugador j: inscriptos){
+            if(j.getNombre().equals(jugador.getNombre())){
+                areaDeAcciones.append(String.format("SUS DATOS...     MAXIMO HISTORICO: $%.2f\n", j.getMaximoHistorico()));
+            }
+
+            else {
+                areaDeAcciones.append(String.format("JUGADOR: %s    MAXIMO HISTORICO: $%.2f\n", j.getNombre(), j.getMaximoHistorico()));
+            }
+
+            List<IManoJugador> manos = j.getManosJugadorInterfaz();
+            int i = 1;
+            for(IManoJugador m: manos){
+                areaDeAcciones.append(String.format("MANO %d: %s", i, m.descripcion()));
+            }
+            areaDeAcciones.append("\n");
+        }
+
+        areaDeAcciones.append("\n\n INGRESE '0' PARA VOLVER AL MENU DE ACCIONES...");
+
+        mostrarMensajeDeError("");
+
+        actualizarPlaceHolder("INGRESE '0' PARA VOLVER AL MENU DE ACCIONES...");
+    }
 }

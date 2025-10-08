@@ -37,14 +37,20 @@ public class Mesa implements IMesa {
         return inscriptos.contains(j);
     }
 
-    private void cambiarEstadoDeLaMesa(EstadoDeLaMesa en){
-        estado = en;
+    @Override
+    public boolean confirme(Jugador j){
+        return confirmados.get(j);
     }
 
+
+    @Override
     public boolean hayLugaresDisponibles(){
         return lugaresDisponibles > 0;
     }
 
+    private void cambiarEstadoDeLaMesa(EstadoDeLaMesa en){
+        estado = en;
+    }
 
     private void reiniciarConfirmados(){
         if(!confirmados.isEmpty()){
@@ -76,6 +82,11 @@ public class Mesa implements IMesa {
         return true;
     }
 
+    @Override
+    public boolean esMiTurno(Jugador j){
+        return (turnoActual != null) && (turnoActual.getNombre().equals(j.getNombre()));
+    }
+
     private boolean esTurnoDeEsteJugador(Jugador j){
         if(turnoActual != null){
             return j == turnoActual;
@@ -88,7 +99,6 @@ public class Mesa implements IMesa {
         switch (estado){
             case ACEPTANDO_INSCRIPCIONES -> {
                 if(!hayLugaresDisponibles() || todosConfirmaron()){
-                    reiniciarConfirmados();
                     cambiarEstadoDeLaMesa(EstadoDeLaMesa.REPARTIENDO_CARTAS);
                     //notificar cambio de estado para actualizar vista.
                 }
@@ -110,7 +120,6 @@ public class Mesa implements IMesa {
             case TURNO_JUGADOR -> {
                 if(turnoActual == null){
                     cambiarEstadoDeLaMesa(EstadoDeLaMesa.TURNO_DEALER);
-                    reiniciarConfirmados();
                     //notificar cambio para actualizar vista e indicar que empieza el turno del dealer.
                 }
 
@@ -124,7 +133,6 @@ public class Mesa implements IMesa {
             case TURNO_DEALER -> {
                 empezarTurnoDelDealer();
                 cambiarEstadoDeLaMesa(EstadoDeLaMesa.REPARTIENDO_GANANCIAS);
-                reiniciarConfirmados();
                 //notificar cambio de estado para actualizar vista e indicar que se repartieron las ganancias.
 
                 break;
@@ -142,7 +150,6 @@ public class Mesa implements IMesa {
             case FINALIZANDO_RONDA -> {
                 if(todosConfirmaron()){
                     cambiarEstadoDeLaMesa(EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES);
-                    reiniciarConfirmados();
                     dealer.limpiarMano();
                     //notificar cambios para actualizar vista.
                 }
@@ -150,6 +157,8 @@ public class Mesa implements IMesa {
                 break;
             }
         }
+
+        reiniciarConfirmados();
     }
 
     private void repartirLasCartasIniciales(){

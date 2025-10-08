@@ -28,4 +28,10 @@ public interface IMesa {
     String getJugadorTurnoActual();
 
     List<IJugador> getInscriptos();
+
+    boolean esMiTurno(Jugador j);
+
+    boolean hayLugaresDisponibles();
+
+    boolean confirme(Jugador j);
 }
