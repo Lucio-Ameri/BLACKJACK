@@ -1,18 +1,19 @@
 package ar.edu.unlu.poo.modelo;
 
-import ar.edu.unlu.poo.interfaz.ICasino;
-import ar.edu.unlu.poo.interfaz.IJugador;
-import ar.edu.unlu.poo.interfaz.IMesa;
+import ar.edu.unlu.poo.interfaz.*;
 import ar.edu.unlu.poo.modelo.estados.EstadoDeLaMesa;
 import ar.edu.unlu.poo.modelo.eventos.Eventos;
+import ar.edu.unlu.poo.modelo.eventos.Notificacion;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class Casino implements ICasino {
+public class Casino implements ICasino, Observador, Observado {
     private List<Jugador> conectados;
     private List<Jugador> listaDeEspera;
+    private List<Observador> observadores;
+    private HashMap<Jugador, Observador> observadoresListaDeEspera;
     private HashMap<Jugador, Double> solicitudDeIngreso;
     private Mesa mesa;
 
@@ -21,7 +22,10 @@ public class Casino implements ICasino {
         this.listaDeEspera = new ArrayList<Jugador>();
         this.solicitudDeIngreso = new HashMap<Jugador, Double>();
         this.mesa = new Mesa();
-        //agregar a this como observador de mesa.
+        mesa.agregarObservador(this);
+
+        this.observadores = new ArrayList<Observador>();
+        this.observadoresListaDeEspera = new HashMap<Jugador, Observador>();
     }
 
     //funcion que sirve solo para el test, comentarla si no se testea. COMENTAR TAMBIEN EN ICASINO.
@@ -87,10 +91,12 @@ public class Casino implements ICasino {
     }
 
     @Override
-    public Eventos unirmeAlCasino(Jugador j){
+    public Eventos unirmeAlCasino(Jugador j, Observador o){
         if(!estoyConectado(j)){
             conectados.add(j);
-            //notificar cambio en la vista.
+            agregarObservador(o);
+
+            notificarObservadores(Notificacion.NUEVO_JUGADOR);
 
             return Eventos.ACCION_REALIZADA;
         }
@@ -99,17 +105,23 @@ public class Casino implements ICasino {
     }
 
     @Override
-    public Eventos irmeDelCasino(Jugador j){
+    public Eventos irmeDelCasino(Jugador j, Observador o){
         if(estoyConectado(j)) {
             if (!jugardoEnLaMesa(j)) {
                 if (estoyEnListaDeEspera(j)) {
                     j.actualizarSaldo(solicitudDeIngreso.get(j));
+
                     listaDeEspera.remove(j);
                     solicitudDeIngreso.remove(j);
+                    observadoresListaDeEspera.remove(j);
+
+                    notificarObservadores(Notificacion.ACTUALIZAR_LISTA_ESPERA);
                 }
 
                 conectados.remove(j);
-                //notificar cambio en la vista.
+                eliminarObservador(o);
+
+                notificarObservadores(Notificacion.JUGADOR_SE_FUE);
 
                 return Eventos.ACCION_REALIZADA;
             }
@@ -121,7 +133,7 @@ public class Casino implements ICasino {
     }
 
     @Override
-    public Eventos unirmeALaListaDeEspera(Jugador j, double monto){
+    public Eventos unirmeALaListaDeEspera(Jugador j, double monto, Observador o){
         if(estoyConectado(j)) {
             if (!jugardoEnLaMesa(j)) {
                 if (mesa.getEstado() != EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES) {
@@ -129,6 +141,7 @@ public class Casino implements ICasino {
                         if(j.transferenciaRealizable(monto)) {
                             solicitudDeIngreso.put(j, monto);
                             listaDeEspera.add(j);
+                            observadoresListaDeEspera.put(j, o);
 
                             j.actualizarSaldo(- monto);
 
@@ -156,8 +169,9 @@ public class Casino implements ICasino {
             j.actualizarSaldo(solicitudDeIngreso.get(j));
             listaDeEspera.remove(j);
             solicitudDeIngreso.remove(j);
+            observadoresListaDeEspera.remove(j);
 
-            //actualizar vistas.
+            notificarObservadores(Notificacion.ACTUALIZAR_LISTA_ESPERA);
             return Eventos.ACCION_REALIZADA;
         }
 
@@ -166,12 +180,13 @@ public class Casino implements ICasino {
 
 
     @Override
-    public Eventos unirmeALaMesa(Jugador j, double monto){
+    public Eventos unirmeALaMesa(Jugador j, double monto, Observador o){
         if(estoyConectado(j)){
             if(!jugardoEnLaMesa(j)){
                 if(!hayJugadoresEsperando()){
                     if(j.transferenciaRealizable(monto)) {
-                        return mesa.inscribirJugadorNuevo(j, monto);
+
+                       return mesa.inscribirJugadorNuevo(j, monto, o);
                     }
 
                     return Eventos.SALDO_INSUFICIENTE;
@@ -187,17 +202,67 @@ public class Casino implements ICasino {
     }
 
     private boolean agregarJugadorEsperando(Jugador j, double monto){
-        Eventos situacion = mesa.inscribirJugadorNuevo(j, monto);
+        Observador o = observadoresListaDeEspera.get(j);
+        Eventos situacion = mesa.inscribirJugadorNuevo(j, monto, o);
 
         if(situacion == Eventos.ACCION_REALIZADA){
             j.actualizarSaldo(solicitudDeIngreso.get(j));
+
             listaDeEspera.remove(j);
             solicitudDeIngreso.remove(j);
+            observadoresListaDeEspera.remove(j);
             return true;
         }
 
         return false;
     }
 
-    //metodo que concatena agregarJugadorEsperando y la funcion actualizar observador.
+    public void agregarObservador(Observador o){
+        observadores.add(o);
+    }
+
+    public void eliminarObservador(Observador o){
+        observadores.remove(o);
+    }
+
+    public void notificarObservadores(Notificacion n){
+        for(Observador o: observadores){
+            o.actualizar(n);
+        }
+    }
+
+    public void actualizar(Notificacion n){
+
+        if (mesa.getEstado() == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES && n != Notificacion.JUGADOR_INGRESO_MESA) {
+            boolean resultado;
+
+            do {
+
+                resultado = false;
+
+                if(!listaDeEspera.isEmpty()){
+                Jugador j = listaDeEspera.get(0);
+                double m = solicitudDeIngreso.get(j);
+
+                resultado = agregarJugadorEsperando(j, m);
+                }
+
+            }
+            while (resultado);
+
+            notificarObservadores(Notificacion.ACTUALIZAR_LISTA_ESPERA);
+        }
+    }
 }
+
+
+
+
+/*
+
+ME QUEDE EN LA PARTE DE QUE EL JUEGO NO CAMBIA LA VISTA CUANDO AGREGO JUGADORES A LA MESA A PARTIR DE LA SEGUNDA TANDA.
+TENGO QUE ENCONTRAR LA FORMA DE REFACTORIZAR EL METODO "ACTUALIZAR" y "agregarJugadorEsperando" PARA PODER NOTIFICAR AL OBSERVADOR
+
+
+
+ */

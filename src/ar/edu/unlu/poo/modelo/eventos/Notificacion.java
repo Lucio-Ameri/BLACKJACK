@@ -1,0 +1,15 @@
+package ar.edu.unlu.poo.modelo.eventos;
+
+public enum Notificacion {
+    JUGADOR_PASO_TURNO,
+    CARTA_REPARTIDA,
+    DEALER_REVELO_MANO,
+    SE_APOSTO_UNA_MANO,
+    NUEVO_JUGADOR,
+    SE_RETIRO_UNA_MANO,
+    JUGADOR_SE_FUE,
+    JUGADOR_REALIZO_JUGADA,
+    ACTUALIZAR_LISTA_ESPERA,
+    CAMBIO_ESTADO_MESA,
+    JUGADOR_INGRESO_MESA
+}

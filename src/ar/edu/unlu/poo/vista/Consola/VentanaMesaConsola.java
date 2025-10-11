@@ -268,7 +268,7 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
             case FINALIZANDO_RONDA -> {
                 areaDeJuego.append("\n\t\t\t DEALER INFORMA:\n\n\n");
                 areaDeJuego.append("\t EL JUEGO TERMINO, DESEA JUGAR OTRA PARTIDA? \n");
-                areaDeJuego.append(String.format("\t - EN CASO DE QUERER SEGUIR JUGANDO DEBERA INGRESAR UN MONTO >= $%.2f ...\n", jugador.getSaldoJugador()));
+                areaDeJuego.append("\t - EN CASO DE QUERER SEGUIR JUGANDO DEBERA INGRESAR '0'\n");
                 areaDeJuego.append("\t - SI NO DESEA HACERLO, INGRESE '-' PARA PODER SALIR DE LA MESA...\n\n");
             }
         }
@@ -373,7 +373,7 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
 
         areaDeAcciones.append("INGRESE UN UN MONTO NO NEGATIVO. CUALQUIER\n");
         areaDeAcciones.append("OTRO INGRESO SERA TOMADO COMO INVALIDO. TENGA EN CUENTA \n");
-        areaDeAcciones.append(String.format("QUE SU SALDO ACTUAL ES %.2f\n", saldo));
+        areaDeAcciones.append(String.format("QUE SU SALDO ACTUAL ES $%.2f\n", saldo));
         areaDeAcciones.append("Y CUALQUIER VALOR MAYOR A ESTE TAMBIEN SERA INVALIDO...\n\n\n");
 
         if(estado == Menu.APOSTAR_MANO){
@@ -385,6 +385,7 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
 
         else{
             headerAcciones.setText("CONFIRMAR PARTICIPACION:");
+            areaDeJuego.setText("");
 
             actualizarPlaceHolder("INGRESE EL MONTO SOLICITADO...");
         }
@@ -402,7 +403,7 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
         int i = 1;
         for(IManoJugador m: manos){
             double apostado = m.getEnviteInterfaz().getMontoApostado();
-            areaDeAcciones.append(String.format("MANO %d: .... APOSTADO: %.2f\n", i, apostado));
+            areaDeAcciones.append(String.format("MANO %d: .... APOSTADO: $%.2f\n", i, apostado));
             i++;
         }
 

@@ -3,10 +3,12 @@ package ar.edu.unlu.poo.modelo;
 import ar.edu.unlu.poo.interfaz.IDealer;
 import ar.edu.unlu.poo.interfaz.IJugador;
 import ar.edu.unlu.poo.interfaz.IMesa;
+import ar.edu.unlu.poo.interfaz.Observador;
 import ar.edu.unlu.poo.modelo.estados.EstadoDeLaMano;
 import ar.edu.unlu.poo.modelo.estados.EstadoDeLaMesa;
 import ar.edu.unlu.poo.modelo.eventos.Accion;
 import ar.edu.unlu.poo.modelo.eventos.Eventos;
+import ar.edu.unlu.poo.modelo.eventos.Notificacion;
 import ar.edu.unlu.poo.modelo.persistencia.Serializador;
 import ar.edu.unlu.poo.modelo.persistencia.TablaPuntuacion;
 
@@ -14,9 +16,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Mesa implements IMesa {
     private List<Jugador> inscriptos;
+    private List<Observador> observadores;
     private HashMap<Jugador, Boolean> confirmados;
     private EstadoDeLaMesa estado;
     private Dealer dealer;
@@ -30,6 +34,7 @@ public class Mesa implements IMesa {
         this.dealer = new Dealer();
         this.turnoActual = null;
         this.lugaresDisponibles = 7;
+        this.observadores = new CopyOnWriteArrayList<>();
     }
 
 
@@ -42,7 +47,6 @@ public class Mesa implements IMesa {
         return confirmados.get(j);
     }
 
-
     @Override
     public boolean hayLugaresDisponibles(){
         return lugaresDisponibles > 0;
@@ -53,9 +57,9 @@ public class Mesa implements IMesa {
     }
 
     private void reiniciarConfirmados(){
-        if(!confirmados.isEmpty()){
-            for(Map.Entry<Jugador, Boolean> valoresContenidos : confirmados.entrySet()){
-                valoresContenidos.setValue(!valoresContenidos.getValue());
+        if (!confirmados.isEmpty()) {
+            for (Map.Entry<Jugador, Boolean> e : confirmados.entrySet()) {
+                e.setValue(false);
             }
         }
     }
@@ -100,10 +104,11 @@ public class Mesa implements IMesa {
             case ACEPTANDO_INSCRIPCIONES -> {
                 if(!hayLugaresDisponibles() || todosConfirmaron()){
                     cambiarEstadoDeLaMesa(EstadoDeLaMesa.REPARTIENDO_CARTAS);
-                    //notificar cambio de estado para actualizar vista.
+                    reiniciarConfirmados();
+
+                    notificarObservadores(Notificacion.CAMBIO_ESTADO_MESA);
                 }
 
-                break;
             }
 
             case REPARTIENDO_CARTAS -> {
@@ -111,54 +116,55 @@ public class Mesa implements IMesa {
                     repartirLasCartasIniciales();
                     turnoActual = inscriptos.get(0);
                     cambiarEstadoDeLaMesa(EstadoDeLaMesa.TURNO_JUGADOR);
-                    //notificar cambio de estado para actualizar vista e informar quien juega.
+                    reiniciarConfirmados();
+
+                    notificarObservadores(Notificacion.CAMBIO_ESTADO_MESA);
                 }
 
-                break;
             }
 
             case TURNO_JUGADOR -> {
                 if(turnoActual == null){
                     cambiarEstadoDeLaMesa(EstadoDeLaMesa.TURNO_DEALER);
-                    //notificar cambio para actualizar vista e indicar que empieza el turno del dealer.
+                    reiniciarConfirmados();
+
+                    notificarObservadores(Notificacion.CAMBIO_ESTADO_MESA);
                 }
 
                 else{
-                    //notificar cambio el turno al siguiente jugador.
+                    notificarObservadores(Notificacion.JUGADOR_PASO_TURNO);
                 }
-
-                break;
             }
 
             case TURNO_DEALER -> {
+                reiniciarConfirmados();
+
                 empezarTurnoDelDealer();
                 cambiarEstadoDeLaMesa(EstadoDeLaMesa.REPARTIENDO_GANANCIAS);
-                //notificar cambio de estado para actualizar vista e indicar que se repartieron las ganancias.
 
-                break;
+                notificarObservadores(Notificacion.CAMBIO_ESTADO_MESA);
             }
 
             case REPARTIENDO_GANANCIAS -> {
-                cambiarEstadoDeLaMesa(EstadoDeLaMesa.FINALIZANDO_RONDA);
-                dealer.retirarManosJugadas(inscriptos);
-                lugaresDisponibles = 7;
-                //notificar cambio de estado para actualizar vista y preguntar si el jugador desea jugar otra ronda.
+                if(todosConfirmaron()) {
+                    cambiarEstadoDeLaMesa(EstadoDeLaMesa.FINALIZANDO_RONDA);
+                    dealer.retirarManosJugadas(inscriptos);
+                    lugaresDisponibles = 7;
+                    reiniciarConfirmados();
 
-                break;
+                    notificarObservadores(Notificacion.CAMBIO_ESTADO_MESA);
+                }
             }
 
             case FINALIZANDO_RONDA -> {
-                if(todosConfirmaron()){
+                if(todosConfirmaron() || inscriptos.isEmpty()){
                     cambiarEstadoDeLaMesa(EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES);
+                    reiniciarConfirmados();
                     dealer.limpiarMano();
-                    //notificar cambios para actualizar vista.
+                    notificarObservadores(Notificacion.CAMBIO_ESTADO_MESA);
                 }
-
-                break;
             }
         }
-
-        reiniciarConfirmados();
     }
 
     private void repartirLasCartasIniciales(){
@@ -170,12 +176,11 @@ public class Mesa implements IMesa {
 
                 for(ManoJugador m: manos){
                     m.recibirCarta(dealer.repartirCarta());
-                    //notificar cambios para actualizar vista.
                 }
             }
 
             manoD.recibirCarta(dealer.repartirCarta());
-            //notificar cambios para actualizar vista.
+            notificarObservadores(Notificacion.CARTA_REPARTIDA);
         }
     }
 
@@ -198,13 +203,13 @@ public class Mesa implements IMesa {
 
     private void empezarTurnoDelDealer(){
         dealer.revelarMano();
-        //notificar cambio de la mano del dealer.
+        notificarObservadores(Notificacion.DEALER_REVELO_MANO);
 
         ManoDealer mano = dealer.getMano();
 
-        while(mano.getEstado() == EstadoDeLaMano.EN_JUEGO){
+        while(mano.getEstado() == EstadoDeLaMano.EN_JUEGO || mano.turnoInicial()){
             mano.recibirCarta(dealer.repartirCarta());
-            //notificar cambio de la mano del dealer.
+            notificarObservadores(Notificacion.CARTA_REPARTIDA);
         }
 
         dealer.definirResultados(inscriptos);
@@ -218,7 +223,7 @@ public class Mesa implements IMesa {
     }
 
     @Override
-    public void confirmarNuevaParticipacion(Jugador j, double monto, boolean participacion){
+    public void confirmarNuevaParticipacion(Jugador j, double monto, boolean participacion, Observador o){
         if(participacion){
             dealer.retirarDineroJugador(j, monto);
             j.agregarMano(new ManoJugador(monto));
@@ -229,14 +234,13 @@ public class Mesa implements IMesa {
         else{
             inscriptos.remove(j);
             confirmados.remove(j);
-
-            //remover al jugador de observadores.
+            eliminarObservador(o);
         }
 
         actualizarEstadoDeLaMesa();
     }
 
-    public Eventos inscribirJugadorNuevo(Jugador j, double monto){
+    public Eventos inscribirJugadorNuevo(Jugador j, double monto, Observador o){
         if(!inscriptos.contains(j)){
             if(estado == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES){
                 if(hayLugaresDisponibles()){
@@ -246,6 +250,8 @@ public class Mesa implements IMesa {
 
                     dealer.retirarDineroJugador(j, monto);
                     j.agregarMano(new ManoJugador(monto));
+
+                    agregarObservador(o);
 
                     actualizarEstadoDeLaMesa();
                     return Eventos.ACCION_REALIZADA;
@@ -307,15 +313,15 @@ public class Mesa implements IMesa {
     }
 
     @Override
-    public Eventos retirarmeDeLaMesa(Jugador j){
+    public Eventos retirarmeDeLaMesa(Jugador j, Observador o){
         if(!confirmados.get(j)){
             if(estado == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES){
                 lugaresDisponibles += j.getManos().size();
                 dealer.eliminarJugador(j);
                 inscriptos.remove(j);
                 confirmados.remove(j);
+                eliminarObservador(o);
 
-                //eliminar jugador de observadores.
                 actualizarEstadoDeLaMesa();
                 return Eventos.ACCION_REALIZADA;
             }
@@ -332,20 +338,23 @@ public class Mesa implements IMesa {
             switch (a){
                 case PEDIR_CARTA -> {
                     m.recibirCarta(dealer.repartirCarta());
-                    //notificar cambio en la vista.
+
+                    notificarObservadores(Notificacion.CARTA_REPARTIDA);
                     return Eventos.ACCION_REALIZADA;
                 }
 
                 case QUEDARME -> {
                     m.quedarme();
-                    //notificar cambio en la vista.
+
+                    notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
                     return Eventos.ACCION_REALIZADA;
                 }
 
                 case RENDIRME -> {
                     if(m.turnoInicial()){
                         m.rendirme();
-                        //notificar cambio en la vista.
+
+                        notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
                         return Eventos.ACCION_REALIZADA;
                     }
 
@@ -362,7 +371,8 @@ public class Mesa implements IMesa {
                                 if(j.transferenciaRealizable(monto)){
                                     dealer.retirarDineroJugador(j, monto);
                                     m.asegurarme();
-                                    //notificar cambio en la vista.
+
+                                    notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
                                     return Eventos.ACCION_REALIZADA;
                                 }
 
@@ -386,7 +396,8 @@ public class Mesa implements IMesa {
                         if(j.transferenciaRealizable(monto)){
                             dealer.retirarDineroJugador(j, monto);
                             m.doblarMano(dealer.repartirCarta());
-                            //notificar cambio en la vista.
+
+                            notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
                             return Eventos.ACCION_REALIZADA;
                         }
 
@@ -410,7 +421,8 @@ public class Mesa implements IMesa {
                                 nueva.recibirCarta(dealer.repartirCarta());
 
                                 j.agregarManoEnPosicion(j.getManos().indexOf(m) + 1, nueva);
-                                //notificar cambio en la vista.
+
+                                notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
                                 return Eventos.ACCION_REALIZADA;
                             }
 
@@ -466,5 +478,20 @@ public class Mesa implements IMesa {
         }
 
         return jugadores;
+    }
+
+    public void agregarObservador(Observador o){
+        observadores.add(o);
+        o.actualizar(Notificacion.JUGADOR_INGRESO_MESA);
+    }
+
+    public void eliminarObservador(Observador o){
+        observadores.remove(o);
+    }
+
+    public void notificarObservadores(Notificacion n){
+        for(Observador o: observadores){
+            o.actualizar(n);
+        }
     }
 }

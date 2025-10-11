@@ -18,8 +18,8 @@ public class PruebaMesa {
         System.out.println();
 
         //inscribo a los jugadores, imprimiendo su contenido y verificando si el estado de la mesa cambio.
-        System.out.println("VALOR OBTENIDO AL INSCRIBIR A LUCIO: " + ronda.inscribirJugadorNuevo((Jugador) j1, 300.0));
-        System.out.println("VALOR OBTENIDO AL INSCRIBIR A FRANCO: " + ronda.inscribirJugadorNuevo((Jugador)j2, 200.0));
+        System.out.println("VALOR OBTENIDO AL INSCRIBIR A LUCIO: " + ronda.inscribirJugadorNuevo((Jugador) j1, 300.0, null));
+        System.out.println("VALOR OBTENIDO AL INSCRIBIR A FRANCO: " + ronda.inscribirJugadorNuevo((Jugador)j2, 200.0, null));
         System.out.println();
 
         System.out.println(j1.descripcion());
@@ -111,17 +111,17 @@ public class PruebaMesa {
         System.out.println(aux2.descripcion());
 
         //jugadores se reinscriben o se dan de baja.
-        ronda.confirmarNuevaParticipacion(aux1, 200.0, true);
-        ronda.confirmarNuevaParticipacion(aux2, 0.0, false);
+        ronda.confirmarNuevaParticipacion(aux1, 200.0, true, null);
+        ronda.confirmarNuevaParticipacion(aux2, 0.0, false, null);
 
         System.out.println("ESTADO DE LA MESA LUEGO DE CONFIRMAR SI SIGUEN O NO: " + ronda.getEstado());
         System.out.println();
 
         //nuevo jugador se inscribe.
         Jugador j3 = new Jugador("Melina", 1000.0);
-        ronda.inscribirJugadorNuevo(j3, 500);
+        ronda.inscribirJugadorNuevo(j3, 500, null);
 
         //ver si retirarme de la ronda funciona.
-        System.out.println(ronda.retirarmeDeLaMesa(aux1));
+        System.out.println(ronda.retirarmeDeLaMesa(aux1, null));
     }
 }

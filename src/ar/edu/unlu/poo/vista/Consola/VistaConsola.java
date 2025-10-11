@@ -2,10 +2,8 @@ package ar.edu.unlu.poo.vista.Consola;
 
 
 import ar.edu.unlu.poo.Controlador.Controlador;
-import ar.edu.unlu.poo.interfaz.IJugador;
 import ar.edu.unlu.poo.interfaz.IVista;
 import ar.edu.unlu.poo.modelo.Casino;
-import ar.edu.unlu.poo.modelo.Mesa;
 
 import javax.swing.*;
 import java.util.EnumMap;
@@ -124,6 +122,12 @@ public class VistaConsola extends JFrame implements IVista {
         ejecutador.put(Menu.RANKING, () -> ventanaCasino.printearRanking(controler.getRanking()));
         ejecutador.put(Menu.PEDIR_APUESTA_LISTA, () -> ventanaCasino.pedirApuesta(controler.getSaldoJugador(), Menu.PEDIR_APUESTA_LISTA));
         ejecutador.put(Menu.PEIDR_APUESTA_MESA, () -> ventanaCasino.pedirApuesta(controler.getSaldoJugador(), Menu.PEIDR_APUESTA_MESA));
+        ejecutador.put(Menu.ACTUALIZAR_LISTA_ESPERA, () -> {
+            if(ventanaCasino.getMenu() != Menu.RANKING) {
+                ventanaCasino.actualizarInformacionOpciones(controler.getJugador(), controler.getPosicionDeEspera());
+            }
+        });
+        ejecutador.put(Menu.ACTUALIZAR_CONECTADOS, () -> ventanaCasino.actualizarInformacionConectados(controler.getJugadoresConectados()));
 
 
         ejecutador.put(Menu.MESA, () ->{
@@ -172,12 +176,20 @@ public class VistaConsola extends JFrame implements IVista {
         ejecutador.put(Menu.ESPERAR, () -> ventanaMesa.aEsperar());
         ejecutador.put(Menu.JUGADORES_INSCRIPTOS, () -> ventanaMesa.mostrarDatosIncriptos(controler.getInscriptos(), controler.getJugador()));
         ejecutador.put(Menu.ACCIONES_MESA, () -> ventanaMesa.imprimirMenuAcciones(controler.getJugador(), controler.getEstadoMesa()));
+        ejecutador.put(Menu.CAMBIO_ESTADO, () -> {
+            ventanaMesa.imprimirAreaDeInformacion(controler.getJugador(), controler.getEstadoMesa(), controler.getTurnoJugador());
+            ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.manoEnTurno());
+            ventanaMesa.imprimirMenuAcciones(controler.getJugador(), controler.getEstadoMesa());
+        });
+        ejecutador.put(Menu.ACTUALIZAR_JUEGO, () -> {
+            ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.manoEnTurno());
 
-    }
+            if(ventanaMesa.getMenu() == Menu.JUGADORES_INSCRIPTOS){
+                ventanaMesa.mostrarDatosIncriptos(controler.getInscriptos(), controler.getJugador());
+            }
 
-
-    public static void main(String[] args) {
-        VistaConsola vista = new VistaConsola(new Controlador(new Casino()));
-        vista.iniciar();
+            ventanaMesa.imprimirAreaDeInformacion(controler.getJugador(), controler.getEstadoMesa(), controler.getTurnoJugador());
+        });
+        ejecutador.put(Menu.ACTUALIZAR_INFORMACION, () -> ventanaMesa.imprimirAreaDeInformacion(controler.getJugador(), controler.getEstadoMesa(), controler.getTurnoJugador()));
     }
 }

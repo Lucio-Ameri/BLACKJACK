@@ -267,7 +267,7 @@ public class VentanaCasinoConsola extends JFrame implements IVentana {
 
         areaDeOpciones.setText("");
         areaDeOpciones.append("\tINGRESE UN UN MONTO NO NEGATIVO. CUALQUIER OTRO INGRESO SERA \n");
-        areaDeOpciones.append(String.format("\tTOMADO COMO INVALIDO. TENGA EN CUENTA QUE SU SALDO ACTUAL ES %.2f\n", monto));
+        areaDeOpciones.append(String.format("\tTOMADO COMO INVALIDO. TENGA EN CUENTA QUE SU SALDO ACTUAL ES $%.2f\n", monto));
         areaDeOpciones.append("\tY CUALQUIER VALOR MAYOR A ESTE TAMBIEN SERA INVALIDO...\n\n\n");
         areaDeOpciones.append("\t\t INGRESE '-' PARA VOLVER AL MENU DE ACCIONES.\n\n");
 
