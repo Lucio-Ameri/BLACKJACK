@@ -37,7 +37,6 @@ public class Mesa implements IMesa {
         this.observadores = new CopyOnWriteArrayList<>();
     }
 
-
     public boolean jugadorEnLaMesa(Jugador j){
         return inscriptos.contains(j);
     }
@@ -88,7 +87,7 @@ public class Mesa implements IMesa {
 
     @Override
     public boolean esMiTurno(Jugador j){
-        return (turnoActual != null) && (turnoActual.getNombre().equals(j.getNombre()));
+        return ((turnoActual != null) && (turnoActual == j));
     }
 
     private boolean esTurnoDeEsteJugador(Jugador j){
@@ -263,7 +262,7 @@ public class Mesa implements IMesa {
             return Eventos.LA_MESA_YA_INICIO;
         }
 
-        return Eventos.JUGADOR_YA_INSCRIPTO;
+        return Eventos.JUGADOR_EN_LA_MESA;
     }
 
     @Override
@@ -467,17 +466,12 @@ public class Mesa implements IMesa {
 
     @Override
     public List<IJugador> getInscriptos(){
-        List<IJugador> jugadores = new ArrayList<IJugador>();
 
         if(estado == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES || estado == EstadoDeLaMesa.FINALIZANDO_RONDA){
-            return jugadores;
+            return new ArrayList<IJugador>();
         }
 
-        for(Jugador j: inscriptos){
-            jugadores.add(j);
-        }
-
-        return jugadores;
+        return new ArrayList<IJugador>(inscriptos);
     }
 
     public void agregarObservador(Observador o){

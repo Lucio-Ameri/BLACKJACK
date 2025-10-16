@@ -18,4 +18,6 @@ public interface IJugador {
     Eventos guardarJugador();
 
     String descripcion();
+
+    String datosPrincipales();
 }

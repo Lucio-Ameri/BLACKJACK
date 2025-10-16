@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Controlador implements Observador{
+
     private IVista vista;
     private ICasino casino;
     private IMesa mesa;
@@ -359,7 +360,7 @@ public class Controlador implements Observador{
         switch (ev){
             case JUGADOR_NO_ESTA -> vista.mostrarMenu(null, "JUGADOR NO SE ENCUENTRA EN EL CASINO! ACCION NO REALIZABLE");
             case LA_MESA_YA_INICIO, SIN_LUGARES_DISPONIBLES -> vista.mostrarMenu(null, "LA MESA YA INICIO LA RONDA! NO SE PUDO UNIR, INTENTELO MAS TARDE! INSCRIBASE A LA LISTA DE ESPERA!");
-            case JUGADOR_EN_LA_MESA, JUGADOR_YA_INSCRIPTO -> vista.mostrarMenu(null, "JUGADOR YA EN LA MESA!");
+            case JUGADOR_EN_LA_MESA -> vista.mostrarMenu(null, "JUGADOR YA EN LA MESA!");
             case GENTE_ESPERANDO -> vista.mostrarMenu(null, "DEBE INSCRIBIRSE A LA LISTA DE ESPERA! LA MESA INICIO Y HAY GENTE ESPERANDO!");
             case SALDO_INSUFICIENTE -> vista.mostrarMenu(null, "EL MONTO INGRESADO ES MAYOR AL QUE POSEE!");
             case ACCION_REALIZADA -> {
@@ -821,7 +822,7 @@ public class Controlador implements Observador{
 
             case NUEVO_JUGADOR, JUGADOR_SE_FUE -> {
                 if(mesa == null){
-                   vista.mostrarMenu(Menu.ACTUALIZAR_CONECTADOS, null);
+                    vista.mostrarMenu(Menu.ACTUALIZAR_CONECTADOS, null);
                 }
             }
 

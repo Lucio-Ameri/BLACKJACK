@@ -20,7 +20,7 @@ public class ManoDealer extends Mano implements IManoDealer {
 
         for(Carta c: cartas){
             if(c.cartaOculta()){
-                c.revelarCarta();
+                c.revelar();
             }
         }
 
@@ -32,7 +32,7 @@ public class ManoDealer extends Mano implements IManoDealer {
         List<Carta> cartas = getCartas();
 
         if(cartas.size() != 1){
-            c.revelarCarta();
+            c.revelar();
         }
 
         cartas.add(c);
@@ -71,9 +71,9 @@ public class ManoDealer extends Mano implements IManoDealer {
         String s = "";
 
         for(Carta c: cartas){
-            s += c.descripcion();
+            s += String.format("%s ", c.descripcion());
         }
 
-        return String.format("%s   TOTAL MANO [%d] --- ESTADO DE LA MANO: %s .\n", s, getTotalMano(), getEstado());
+        return s + String.format("  TOTAL MANO { %d }\nESTADO DE LA MANO: %s\n", getTotal(), getEstado());
     }
 }

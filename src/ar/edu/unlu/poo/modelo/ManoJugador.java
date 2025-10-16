@@ -53,12 +53,12 @@ public class ManoJugador extends Mano implements IManoJugador, Serializable {
     public ManoJugador separarMano(){
         List<Carta> cartas = getCartas();
 
-        ManoJugador nM = new ManoJugador(envite.getMontoApostado());
-        nM.recibirCarta(cartas.remove(cartas.size() - 1));
+        ManoJugador nuevaMano = new ManoJugador(envite.getMontoApostado());
+        nuevaMano.recibirCarta(cartas.remove(cartas.size() - 1));
 
         this.cambiarEstadoDeLaMano(EstadoDeLaMano.TURNO_INICIAL);
         this.calcularTotal();
-        return nM;
+        return nuevaMano;
     }
 
     @Override
@@ -86,7 +86,7 @@ public class ManoJugador extends Mano implements IManoJugador, Serializable {
     public void recibirCarta(Carta c){
         List<Carta> cartas = getCartas();
 
-        c.revelarCarta();
+        c.revelar();
         cartas.add(c);
 
         if(cartas.size() == 3){
@@ -102,9 +102,9 @@ public class ManoJugador extends Mano implements IManoJugador, Serializable {
         String s = "";
 
         for(Carta c: cartas){
-            s += c.descripcion();
+            s += String.format("%s ", c.descripcion());
         }
 
-        return s + String.format("   TOTAL MANO: [%d] --- \nESTADO DE LA MANO: %s %s.\n", getTotalMano(), getEstado(), envite.descripcion());
+        return s + String.format("  TOTAL DE LA MANO: { %d }   ESTADO DE LA MANO: %s\n%s", getTotal(), getEstado(), getEnvite().descripcion());
     }
 }

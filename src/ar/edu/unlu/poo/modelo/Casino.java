@@ -22,10 +22,10 @@ public class Casino implements ICasino, Observador, Observado {
         this.listaDeEspera = new ArrayList<Jugador>();
         this.solicitudDeIngreso = new HashMap<Jugador, Double>();
         this.mesa = new Mesa();
-        mesa.agregarObservador(this);
-
         this.observadores = new ArrayList<Observador>();
         this.observadoresListaDeEspera = new HashMap<Jugador, Observador>();
+
+        mesa.agregarObservador(this);
     }
 
     //funcion que sirve solo para el test, comentarla si no se testea. COMENTAR TAMBIEN EN ICASINO.
@@ -37,17 +37,13 @@ public class Casino implements ICasino, Observador, Observado {
 
     @Override
     public List<IJugador> getJugadoresConectados(Jugador jug){
-        List<IJugador> jugadores = new ArrayList<IJugador>();
+
 
         if(conectados.isEmpty() || !estoyConectado(jug)){
-            return jugadores;
+            return new ArrayList<IJugador>();
         }
 
-        for(Jugador j: conectados){
-            jugadores.add(j);
-        }
-
-        return jugadores;
+        return new ArrayList<IJugador>(conectados);
     }
 
     @Override
@@ -101,7 +97,7 @@ public class Casino implements ICasino, Observador, Observado {
             return Eventos.ACCION_REALIZADA;
         }
 
-        return Eventos.JUGADOR_YA_INSCRIPTO;
+        return Eventos.JUGADOR_EN_LA_MESA;
     }
 
     @Override
@@ -114,6 +110,8 @@ public class Casino implements ICasino, Observador, Observado {
                     listaDeEspera.remove(j);
                     solicitudDeIngreso.remove(j);
                     observadoresListaDeEspera.remove(j);
+
+                    //J.guardarJugador();
 
                     notificarObservadores(Notificacion.ACTUALIZAR_LISTA_ESPERA);
                 }
@@ -182,20 +180,16 @@ public class Casino implements ICasino, Observador, Observado {
     @Override
     public Eventos unirmeALaMesa(Jugador j, double monto, Observador o){
         if(estoyConectado(j)){
-            if(!jugardoEnLaMesa(j)){
-                if(!hayJugadoresEsperando()){
-                    if(j.transferenciaRealizable(monto)) {
+            if(!hayJugadoresEsperando()){
+                if(j.transferenciaRealizable(monto)) {
 
-                       return mesa.inscribirJugadorNuevo(j, monto, o);
-                    }
-
-                    return Eventos.SALDO_INSUFICIENTE;
+                   return mesa.inscribirJugadorNuevo(j, monto, o);
                 }
 
-                return Eventos.GENTE_ESPERANDO;
+                return Eventos.SALDO_INSUFICIENTE;
             }
 
-            return Eventos.JUGADOR_EN_LA_MESA;
+            return Eventos.GENTE_ESPERANDO;
         }
 
         return Eventos.JUGADOR_NO_ESTA;
@@ -232,26 +226,24 @@ public class Casino implements ICasino, Observador, Observado {
     }
 
     public void actualizar(Notificacion n){
+        if((n != Notificacion.CAMBIO_ESTADO_MESA) && (mesa.getEstado() != EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES)){
+            return;
+        }
 
-        if (mesa.getEstado() == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES && n != Notificacion.JUGADOR_INGRESO_MESA) {
-            boolean resultado;
+        boolean resultado;
+        do {
+            resultado = false;
 
-            do {
-
-                resultado = false;
-
-                if(!listaDeEspera.isEmpty()){
+            if(!listaDeEspera.isEmpty()){
                 Jugador j = listaDeEspera.get(0);
                 double m = solicitudDeIngreso.get(j);
 
                 resultado = agregarJugadorEsperando(j, m);
-                }
-
             }
-            while (resultado);
-
-            notificarObservadores(Notificacion.ACTUALIZAR_LISTA_ESPERA);
         }
+        while (resultado);
+
+        notificarObservadores(Notificacion.ACTUALIZAR_LISTA_ESPERA);
     }
 }
 

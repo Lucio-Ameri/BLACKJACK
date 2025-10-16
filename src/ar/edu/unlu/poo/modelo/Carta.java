@@ -34,10 +34,10 @@ public class Carta implements ICarta, Serializable {
 
     @Override
     public int getValorNumericoCarta(){
-        return cartaOculta() ? 0 : valor.getValorNumerico();
+        return cartaOculta() ? ValorCarta.OCULTO.getValorNumerico() : valor.getValorNumerico();
     }
 
-    public void revelarCarta(){
+    public void revelar(){
         if(cartaOculta()){
             estado = VisibilidadCarta.VISIBLE;
         }
@@ -57,6 +57,7 @@ public class Carta implements ICarta, Serializable {
 
     @Override
     public String descripcion(){
-        return cartaOculta() ? "[??] " : "[" + valor.getSimboloValor() + palo.getPaloIcono() + "] ";
+        return cartaOculta() ? "[??]" : String.format("[%s%s]", valor.getSimboloValor(), palo.getPaloIcono());
     }
 }
+

@@ -11,5 +11,5 @@ public interface IManoDealer {
 
     EstadoDeLaMano getEstado();
 
-    int getTotalMano();
+    int getTotal();
 }

@@ -13,5 +13,5 @@ public interface IManoJugador {
 
     EstadoDeLaMano getEstado();
 
-    int getTotalMano();
+    int getTotal();
 }
