@@ -12,7 +12,7 @@ import javax.swing.*;
 import java.util.EnumMap;
 import java.util.Map;
 
-public class VistaConsola extends JFrame implements IVista {
+public class VistaConsola extends JFrame  implements IVista{
     private final Map<Menu, Runnable> ejecutador = new EnumMap<>(Menu.class);
     private VentanaLogginConsola ventanaLoggin;
     private VentanaCasinoConsola ventanaCasino;
@@ -58,6 +58,7 @@ public class VistaConsola extends JFrame implements IVista {
         activarLoggin();
     }
 
+    @Override
     public void mostrarMenu(Menu estado, Eventos situacion){
         if(situacion != null) {
             String mensaje = mensajeError(situacion);
