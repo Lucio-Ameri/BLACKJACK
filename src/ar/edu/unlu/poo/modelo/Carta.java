@@ -60,3 +60,4 @@ public class Carta implements ICarta, Serializable {
         return cartaOculta() ? "[??]" : String.format("[%s%s]", valor.getSimboloValor(), palo.getPaloIcono());
     }
 }
+
