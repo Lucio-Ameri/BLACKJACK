@@ -1,9 +1,6 @@
 package ar.edu.unlu.poo.modelo;
 
-import ar.edu.unlu.poo.interfaz.IDealer;
-import ar.edu.unlu.poo.interfaz.IJugador;
-import ar.edu.unlu.poo.interfaz.IMesa;
-import ar.edu.unlu.poo.interfaz.Observador;
+import ar.edu.unlu.poo.interfaz.*;
 import ar.edu.unlu.poo.modelo.estados.EstadoDeLaMano;
 import ar.edu.unlu.poo.modelo.estados.EstadoDeLaMesa;
 import ar.edu.unlu.poo.modelo.eventos.Accion;
@@ -42,8 +39,8 @@ public class Mesa implements IMesa {
     }
 
     @Override
-    public boolean confirme(Jugador j){
-        return confirmados.get(j);
+    public boolean confirme(IJugador j){
+        return confirmados.get(getJugador(j.getNombre()));
     }
 
     @Override
@@ -64,10 +61,14 @@ public class Mesa implements IMesa {
     }
 
     @Override
-    public void confirmarParticipacion(Jugador j){
-        if(!confirmados.get(j)){
-            confirmados.put(j, true);
-            actualizarEstadoDeLaMesa();
+    public void confirmarParticipacion(IJugador j){
+        Jugador jug = getJugador(j.getNombre());
+
+        if(jug != null) {
+            if (!confirmados.get(jug)) {
+                confirmados.put(jug, true);
+                actualizarEstadoDeLaMesa();
+            }
         }
     }
 
@@ -86,8 +87,9 @@ public class Mesa implements IMesa {
     }
 
     @Override
-    public boolean esMiTurno(Jugador j){
-        return ((turnoActual != null) && (turnoActual == j));
+    public boolean esMiTurno(IJugador j){
+        Jugador jug = getJugador(j.getNombre());
+        return ((turnoActual != null) && (turnoActual == jug));
     }
 
     private boolean esTurnoDeEsteJugador(Jugador j){
@@ -217,26 +219,31 @@ public class Mesa implements IMesa {
         for(Jugador j: inscriptos){
             tabla.actualizarLista(j);
         }
-
-        tabla.guardarTabla();
     }
 
     @Override
-    public void confirmarNuevaParticipacion(Jugador j, double monto, boolean participacion, Observador o){
-        if(participacion){
-            dealer.retirarDineroJugador(j, monto);
-            j.agregarMano(new ManoJugador(monto));
-            confirmarParticipacion(j);
-            lugaresDisponibles --;
-        }
+    public void confirmarNuevaParticipacion(IJugador j, double monto, boolean participacion, Observador o){
+        try {
+            Jugador jug = getJugador(j.getNombre());
 
-        else{
-            inscriptos.remove(j);
-            confirmados.remove(j);
-            eliminarObservador(o);
-        }
+            if (participacion) {
+                dealer.retirarDineroJugador(jug, monto);
+                jug.agregarMano(new ManoJugador(monto));
+                confirmarParticipacion(j);
+                lugaresDisponibles--;
+            }
 
-        actualizarEstadoDeLaMesa();
+            else {
+                inscriptos.remove(jug);
+                confirmados.remove(jug);
+                eliminarObservador(o);
+            }
+
+            actualizarEstadoDeLaMesa();
+        }
+        catch (NullPointerException e){
+            System.out.println("ERROR, JUGADOR NULO!");
+        }
     }
 
     public Eventos inscribirJugadorNuevo(Jugador j, double monto, Observador o){
@@ -266,160 +273,163 @@ public class Mesa implements IMesa {
     }
 
     @Override
-    public Eventos apostarOtraMano(Jugador j, double monto){
-        if(!confirmados.get(j)){
-            if(estado == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES){
-                if(hayLugaresDisponibles()){
-                    if(j.transferenciaRealizable(monto)){
-                        lugaresDisponibles --;
-                        dealer.retirarDineroJugador(j, monto);
-                        j.agregarMano(new ManoJugador(monto));
+    public Eventos apostarOtraMano(IJugador j, double monto){
+        Jugador jug = getJugador(j.getNombre());
+        if(jug != null) {
+            if (!confirmados.get(jug)) {
+                if (estado == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES) {
+                    if (hayLugaresDisponibles()) {
+                        if (jug.transferenciaRealizable(monto)) {
+                            lugaresDisponibles--;
+                            dealer.retirarDineroJugador(jug, monto);
+                            jug.agregarMano(new ManoJugador(monto));
 
-                        actualizarEstadoDeLaMesa();
-                        return Eventos.ACCION_REALIZADA;
-                    }
-
-                    return Eventos.SALDO_INSUFICIENTE;
-                }
-
-                return Eventos.SIN_LUGARES_DISPONIBLES;
-            }
-
-            return Eventos.LA_MESA_YA_INICIO;
-        }
-
-        return Eventos.JUGADOR_CONFIRMADO;
-    }
-
-    @Override
-    public Eventos retirarUnaMano(Jugador j, ManoJugador mano){
-        if(!confirmados.get(j)){
-            if(estado == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES){
-                if(j.getManos().size() > 1){
-                    dealer.devolverDinero(j, mano);
-                    lugaresDisponibles ++;
-
-                    return Eventos.ACCION_REALIZADA;
-                }
-
-                return Eventos.ULTIMA_MANO;
-            }
-
-            return Eventos.LA_MESA_YA_INICIO;
-        }
-
-        return Eventos.JUGADOR_CONFIRMADO;
-    }
-
-    @Override
-    public Eventos retirarmeDeLaMesa(Jugador j, Observador o){
-        if(!confirmados.get(j)){
-            if(estado == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES){
-                lugaresDisponibles += j.getManos().size();
-                dealer.eliminarJugador(j);
-                inscriptos.remove(j);
-                confirmados.remove(j);
-                eliminarObservador(o);
-
-                actualizarEstadoDeLaMesa();
-                return Eventos.ACCION_REALIZADA;
-            }
-
-            return Eventos.LA_MESA_YA_INICIO;
-        }
-
-        return Eventos.JUGADOR_CONFIRMADO;
-    }
-
-    @Override
-    public Eventos jugadorJuegaSuTurno(Accion a, Jugador j, ManoJugador m){
-        if(esTurnoDeEsteJugador(j)){
-            switch (a){
-                case PEDIR_CARTA -> {
-                    m.recibirCarta(dealer.repartirCarta());
-
-                    notificarObservadores(Notificacion.CARTA_REPARTIDA);
-                    return Eventos.ACCION_REALIZADA;
-                }
-
-                case QUEDARME -> {
-                    m.quedarme();
-
-                    notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
-                    return Eventos.ACCION_REALIZADA;
-                }
-
-                case RENDIRME -> {
-                    if(m.turnoInicial()){
-                        m.rendirme();
-
-                        notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
-                        return Eventos.ACCION_REALIZADA;
-                    }
-
-                    return Eventos.NO_ES_TURNO_INICIAL;
-                }
-
-                case ASEGURARME -> {
-                    if(m.turnoInicial()){
-                        if(dealer.condicionSeguro()){
-                            if(!m.getEnvite().estaAsegurado()){
-
-                                double monto = m.getEnvite().getMontoApostado() / 2.0;
-
-                                if(j.transferenciaRealizable(monto)){
-                                    dealer.retirarDineroJugador(j, monto);
-                                    m.asegurarme();
-
-                                    notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
-                                    return Eventos.ACCION_REALIZADA;
-                                }
-
-                                return Eventos.SALDO_INSUFICIENTE;
-                            }
-
-                            return Eventos.MANO_YA_ASEGURADA;
-                        }
-
-                        return Eventos.DEALER_NO_CUMPLE;
-                    }
-
-                    return Eventos.NO_ES_TURNO_INICIAL;
-                }
-
-                case DOBLAR_MANO -> {
-                    if(m.turnoInicial()){
-
-                        double monto = m.getEnvite().getMontoApostado();
-
-                        if(j.transferenciaRealizable(monto)){
-                            dealer.retirarDineroJugador(j, monto);
-                            m.doblarMano(dealer.repartirCarta());
-
-                            notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
+                            actualizarEstadoDeLaMesa();
                             return Eventos.ACCION_REALIZADA;
                         }
 
                         return Eventos.SALDO_INSUFICIENTE;
                     }
 
-                    return Eventos.NO_ES_TURNO_INICIAL;
+                    return Eventos.SIN_LUGARES_DISPONIBLES;
                 }
 
-                case SEPARAR_MANO -> {
-                    if(m.turnoInicial()){
-                        if(m.condicionParaSepararMano()){
+                return Eventos.LA_MESA_YA_INICIO;
+            }
+
+            return Eventos.JUGADOR_CONFIRMADO;
+        }
+
+        return Eventos.JUGADOR_NO_CONECTADO;
+    }
+
+    @Override
+    public Eventos retirarUnaMano(IJugador j, int posMano){
+        Jugador jug = getJugador(j.getNombre());
+        ManoJugador mano = jug.getManos().get(posMano);
+
+        if(jug != null) {
+            if (!confirmados.get(jug)) {
+                if (estado == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES) {
+                    if (jug.getManos().size() > 1) {
+                        dealer.devolverDinero(jug, mano);
+                        lugaresDisponibles++;
+
+                        return Eventos.ACCION_REALIZADA;
+                    }
+
+                    return Eventos.ULTIMA_MANO;
+                }
+
+                return Eventos.LA_MESA_YA_INICIO;
+            }
+
+            return Eventos.JUGADOR_CONFIRMADO;
+        }
+
+        return Eventos.JUGADOR_NO_CONECTADO;
+    }
+
+    @Override
+    public Eventos retirarmeDeLaMesa(IJugador j, Observador o){
+        Jugador jug = getJugador(j.getNombre());
+
+        if(jug != null) {
+            if (!confirmados.get(jug)) {
+                if (estado == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES) {
+                    lugaresDisponibles += jug.getManos().size();
+                    dealer.eliminarJugador(jug);
+                    inscriptos.remove(jug);
+                    confirmados.remove(jug);
+                    eliminarObservador(o);
+
+                    actualizarEstadoDeLaMesa();
+                    return Eventos.ACCION_REALIZADA;
+                }
+
+                return Eventos.LA_MESA_YA_INICIO;
+            }
+
+            return Eventos.JUGADOR_CONFIRMADO;
+        }
+
+        return  Eventos.JUGADOR_NO_CONECTADO;
+    }
+
+    @Override
+    public Eventos jugadorJuegaSuTurno(Accion a, IJugador j){
+        Jugador jug = getJugador(j.getNombre());
+        if(jug != null) {
+
+            if (esTurnoDeEsteJugador(jug)) {
+
+                ManoJugador m = null;
+
+                if(a != Accion.PASAR_TURNO) {
+                    m = getManoTurnoActual(jug);
+                }
+
+                switch (a) {
+                    case PEDIR_CARTA -> {
+                        m.recibirCarta(dealer.repartirCarta());
+
+                        notificarObservadores(Notificacion.CARTA_REPARTIDA);
+                        return Eventos.ACCION_REALIZADA;
+                    }
+
+                    case QUEDARME -> {
+                        m.quedarme();
+
+                        notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
+                        return Eventos.ACCION_REALIZADA;
+                    }
+
+                    case RENDIRME -> {
+                        if (m.turnoInicial()) {
+                            m.rendirme();
+
+                            notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
+                            return Eventos.ACCION_REALIZADA;
+                        }
+
+                        return Eventos.NO_ES_TURNO_INICIAL;
+                    }
+
+                    case ASEGURARME -> {
+                        if (m.turnoInicial()) {
+                            if (dealer.condicionSeguro()) {
+                                if (!m.getEnvite().estaAsegurado()) {
+
+                                    double monto = m.getEnvite().getMontoApostado() / 2.0;
+
+                                    if (jug.transferenciaRealizable(monto)) {
+                                        dealer.retirarDineroJugador(jug, monto);
+                                        m.asegurarme();
+
+                                        notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
+                                        return Eventos.ACCION_REALIZADA;
+                                    }
+
+                                    return Eventos.SALDO_INSUFICIENTE;
+                                }
+
+                                return Eventos.MANO_YA_ASEGURADA;
+                            }
+
+                            return Eventos.DEALER_NO_CUMPLE;
+                        }
+
+                        return Eventos.NO_ES_TURNO_INICIAL;
+                    }
+
+                    case DOBLAR_MANO -> {
+                        if (m.turnoInicial()) {
 
                             double monto = m.getEnvite().getMontoApostado();
 
-                            if(j.transferenciaRealizable(monto)){
-                                dealer.retirarDineroJugador(j, monto);
-                                ManoJugador nueva = m.separarMano();
-
-                                m.recibirCarta(dealer.repartirCarta());
-                                nueva.recibirCarta(dealer.repartirCarta());
-
-                                j.agregarManoEnPosicion(j.getManos().indexOf(m) + 1, nueva);
+                            if (jug.transferenciaRealizable(monto)) {
+                                dealer.retirarDineroJugador(jug, monto);
+                                m.doblarMano(dealer.repartirCarta());
 
                                 notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
                                 return Eventos.ACCION_REALIZADA;
@@ -428,22 +438,64 @@ public class Mesa implements IMesa {
                             return Eventos.SALDO_INSUFICIENTE;
                         }
 
-                        return Eventos.MANO_NO_CUMPLE;
+                        return Eventos.NO_ES_TURNO_INICIAL;
                     }
 
-                    return Eventos.NO_ES_TURNO_INICIAL;
-                }
+                    case SEPARAR_MANO -> {
+                        if (m.turnoInicial()) {
+                            if (m.condicionParaSepararMano()) {
 
-                case PASAR_TURNO -> {
-                    pasarTurnoAlSiguienteJugador();
-                    return Eventos.ACCION_REALIZADA;
+                                double monto = m.getEnvite().getMontoApostado();
+
+                                if (jug.transferenciaRealizable(monto)) {
+                                    dealer.retirarDineroJugador(jug, monto);
+                                    ManoJugador nueva = m.separarMano();
+
+                                    m.recibirCarta(dealer.repartirCarta());
+                                    nueva.recibirCarta(dealer.repartirCarta());
+
+                                    jug.agregarManoEnPosicion(jug.getManos().indexOf(m) + 1, nueva);
+
+                                    notificarObservadores(Notificacion.JUGADOR_REALIZO_JUGADA);
+                                    return Eventos.ACCION_REALIZADA;
+                                }
+
+                                return Eventos.SALDO_INSUFICIENTE;
+                            }
+
+                            return Eventos.MANO_NO_CUMPLE;
+                        }
+
+                        return Eventos.NO_ES_TURNO_INICIAL;
+                    }
+
+                    case PASAR_TURNO -> {
+                        pasarTurnoAlSiguienteJugador();
+                        return Eventos.ACCION_REALIZADA;
+                    }
                 }
+            }
+
+            return Eventos.NO_ES_SU_TURNO;
+        }
+
+        return Eventos.JUGADOR_NO_CONECTADO;
+    }
+
+    private ManoJugador getManoTurnoActual(Jugador j){
+        List<ManoJugador> manos = j.getManos();
+        EstadoDeLaMano estado;
+
+        for(ManoJugador m: manos){
+            estado = m.getEstado();
+
+            if(estado == EstadoDeLaMano.EN_JUEGO || estado == EstadoDeLaMano.TURNO_INICIAL){
+                return m;
             }
         }
 
-        return Eventos.NO_ES_SU_TURNO;
+        return null;
     }
-
 
     @Override
     public IDealer getDealer(){
@@ -487,5 +539,15 @@ public class Mesa implements IMesa {
         for(Observador o: observadores){
             o.actualizar(n);
         }
+    }
+
+    private Jugador getJugador(String nombre){
+        for(Jugador j: inscriptos){
+            if(j.getNombre().equals(nombre)){
+                return j;
+            }
+        }
+
+        return null;
     }
 }
