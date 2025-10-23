@@ -147,7 +147,7 @@ public class VentanaLogginConsola extends JFrame implements IVentana {
 
         int i = 1;
         for(IJugador j: jugadores) {
-            areaDeTexto.append(String.format("\t %d.   %s\n", i, j.descripcion()));
+            areaDeTexto.append(String.format("\t %d.   %s\n", i, j.datosPrincipales()));
             i++;
         }
         areaDeTexto.append("\t 0.   VOLVER AL MENU ANTERIOR.\n\n\n");

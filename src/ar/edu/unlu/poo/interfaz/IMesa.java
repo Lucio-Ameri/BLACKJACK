@@ -10,17 +10,17 @@ import ar.edu.unlu.poo.modelo.eventos.Eventos;
 import java.util.List;
 
 public interface IMesa {
-    void confirmarParticipacion(Jugador j);
+    void confirmarParticipacion(IJugador j);
 
-    void confirmarNuevaParticipacion(Jugador j, double monto, boolean participacion, Observador o);
+    void confirmarNuevaParticipacion(IJugador j, double monto, boolean participacion, Observador o);
 
-    Eventos apostarOtraMano(Jugador j, double monto);
+    Eventos apostarOtraMano(IJugador j, double monto);
 
-    Eventos retirarUnaMano(Jugador j, ManoJugador mano);
+    Eventos retirarUnaMano(IJugador j, int posMano);
 
-    Eventos retirarmeDeLaMesa(Jugador j, Observador o);
+    Eventos retirarmeDeLaMesa(IJugador j, Observador o);
 
-    Eventos jugadorJuegaSuTurno(Accion a, Jugador j, ManoJugador m);
+    Eventos jugadorJuegaSuTurno(Accion a, IJugador j);
 
     IDealer getDealer();
 
@@ -30,9 +30,9 @@ public interface IMesa {
 
     List<IJugador> getInscriptos();
 
-    boolean esMiTurno(Jugador j);
+    boolean esMiTurno(IJugador j);
 
     boolean hayLugaresDisponibles();
 
-    boolean confirme(Jugador j);
+    boolean confirme(IJugador j);
 }

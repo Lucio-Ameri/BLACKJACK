@@ -32,11 +32,13 @@ public class TablaPuntuacion implements Serializable {
         }
 
         else{
-            if(d > 1300.0){
+            if(d >= 1500.0){
                 puntuaciones.put(s, d);
                 mejoresJugadores.add(s);
             }
         }
+
+        guardarTabla();
     }
 
     public List<String> obtenerMejoresJugadores(){
@@ -59,7 +61,7 @@ public class TablaPuntuacion implements Serializable {
         return listaOrdenada = new ArrayList<String>();
     }
 
-    public void guardarTabla(){
+    private void guardarTabla(){
         Serializador.guardarTablaDePuntuacion(this);
     }
 }

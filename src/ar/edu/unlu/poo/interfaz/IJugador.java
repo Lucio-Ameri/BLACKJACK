@@ -15,7 +15,7 @@ public interface IJugador {
 
     boolean perdio();
 
-    Eventos guardarJugador();
-
     String descripcion();
+
+    String datosPrincipales();
 }

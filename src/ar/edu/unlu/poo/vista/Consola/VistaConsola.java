@@ -2,8 +2,11 @@ package ar.edu.unlu.poo.vista.Consola;
 
 
 import ar.edu.unlu.poo.Controlador.Controlador;
+import ar.edu.unlu.poo.interfaz.IControlador;
 import ar.edu.unlu.poo.interfaz.IVista;
 import ar.edu.unlu.poo.modelo.Casino;
+import ar.edu.unlu.poo.modelo.estados.EstadoDeLaMesa;
+import ar.edu.unlu.poo.modelo.eventos.Eventos;
 
 import javax.swing.*;
 import java.util.EnumMap;
@@ -14,9 +17,9 @@ public class VistaConsola extends JFrame implements IVista {
     private VentanaLogginConsola ventanaLoggin;
     private VentanaCasinoConsola ventanaCasino;
     private VentanaMesaConsola ventanaMesa;
-    private Controlador controler;
+    private IControlador controler;
 
-    public VistaConsola(Controlador controler){
+    public VistaConsola(IControlador controler){
         this.controler = controler;
         controler.setVista(this);
 
@@ -55,8 +58,10 @@ public class VistaConsola extends JFrame implements IVista {
         activarLoggin();
     }
 
-    public void mostrarMenu(Menu estado, String mensaje){
-        if(mensaje != null && !mensaje.isBlank()) {
+    public void mostrarMenu(Menu estado, Eventos situacion){
+        if(situacion != null) {
+            String mensaje = mensajeError(situacion);
+
             if (ventanaLoggin.isVisible()) {
                 ventanaLoggin.mostrarMensajeDeError(mensaje);
             }
@@ -97,40 +102,44 @@ public class VistaConsola extends JFrame implements IVista {
     }
 
     private void iniciarEjecutador(){
-        ejecutador.put(Menu.LOGGIN, () ->{
+        //metodos para VENTANA LOGGIN.
+        ejecutador.put(Menu.LOGGIN, () -> {
             if(ventanaLoggin.isVisible()){
                 ventanaLoggin.mostrarMenuPrincipal();
             }
+
             else{
                 activarLoggin();
             }
         });
-        ejecutador.put(Menu.CARGAR_JUGADORES, () -> ventanaLoggin.mostrarMenuCargarJugador(controler.getJugadoresGuardados()));
+        ejecutador.put(Menu.CARGAR_JUGADORES, () -> ventanaLoggin.mostrarMenuCargarJugador(controler.getGuardados()));
         ejecutador.put(Menu.CREAR_JUGADOR, () -> ventanaLoggin.mostrarMenuCrearJugador());
 
 
-        ejecutador.put(Menu.CASINO, () ->{
+        //metodos para VENTANA CASINO.
+        ejecutador.put(Menu.CASINO, () -> {
             if(ventanaCasino.isVisible()){
-                ventanaCasino.mostrarCasino(controler.getJugadoresConectados(), controler.getJugador(), controler.getPosicionDeEspera());
+                ventanaCasino.mostrarCasino(controler.getConectadosCasino(), controler.getJugador(), controler.posicionDeEspera());
             }
             else{
                 activarCasino();
             }
         });
-        ejecutador.put(Menu.CONECTADOS, () -> ventanaCasino.actualizarInformacionConectados(controler.getJugadoresConectados()));
-        ejecutador.put(Menu.ACCIONES_CASINO, () -> ventanaCasino.actualizarInformacionOpciones(controler.getJugador(), controler.getPosicionDeEspera()));
+        ejecutador.put(Menu.CONECTADOS, () -> ventanaCasino.actualizarInformacionConectados(controler.getConectadosCasino()));
+        ejecutador.put(Menu.ACCIONES_CASINO, () -> ventanaCasino.actualizarInformacionOpciones(controler.getJugador(), controler.posicionDeEspera()));
         ejecutador.put(Menu.RANKING, () -> ventanaCasino.printearRanking(controler.getRanking()));
         ejecutador.put(Menu.PEDIR_APUESTA_LISTA, () -> ventanaCasino.pedirApuesta(controler.getSaldoJugador(), Menu.PEDIR_APUESTA_LISTA));
-        ejecutador.put(Menu.PEIDR_APUESTA_MESA, () -> ventanaCasino.pedirApuesta(controler.getSaldoJugador(), Menu.PEIDR_APUESTA_MESA));
+        ejecutador.put(Menu.PEDIR_APUESTA_MESA, () -> ventanaCasino.pedirApuesta(controler.getSaldoJugador(), Menu.PEDIR_APUESTA_MESA));
         ejecutador.put(Menu.ACTUALIZAR_LISTA_ESPERA, () -> {
-            if(ventanaCasino.getMenu() != Menu.RANKING) {
-                ventanaCasino.actualizarInformacionOpciones(controler.getJugador(), controler.getPosicionDeEspera());
+            if(ventanaCasino.getMenu() != Menu.RANKING){
+                ventanaCasino.actualizarInformacionOpciones(controler.getJugador(), controler.posicionDeEspera());
             }
         });
-        ejecutador.put(Menu.ACTUALIZAR_CONECTADOS, () -> ventanaCasino.actualizarInformacionConectados(controler.getJugadoresConectados()));
+        ejecutador.put(Menu.ACTUALIZAR_CONECTADOS, () -> ventanaCasino.actualizarInformacionConectados(controler.getConectadosCasino()));
 
 
-        ejecutador.put(Menu.MESA, () ->{
+        //metodos para VENTANA MESA.
+        ejecutador.put(Menu.MESA, () -> {
             if(ventanaMesa.isVisible()){
                 ventanaMesa.mostrarMesa(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.getTurnoJugador(), controler.manoEnTurno());
             }
@@ -139,7 +148,6 @@ public class VistaConsola extends JFrame implements IVista {
                 activarMesa();
             }
         });
-
         ejecutador.put(Menu.INSCRIPCIONES, () -> {
             ventanaMesa.imprimirAreaDeInformacion(null, controler.getEstadoMesa(), null);
             ventanaMesa.imprimirAreaDeJuego(null, null, controler.getEstadoMesa(), -1);
@@ -151,30 +159,30 @@ public class VistaConsola extends JFrame implements IVista {
             ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
         });
         ejecutador.put(Menu.TURNO_JUGADOR, () -> {
-           ventanaMesa.imprimirAreaDeInformacion(controler.getJugador(), controler.getEstadoMesa(), controler.getTurnoJugador());
-           ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.manoEnTurno());
-           ventanaMesa.imprimirMenuAcciones(controler.getJugador(), controler.getEstadoMesa());
+            ventanaMesa.imprimirAreaDeInformacion(controler.getJugador(), controler.getEstadoMesa(), controler.getTurnoJugador());
+            ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.manoEnTurno());
+            ventanaMesa.imprimirMenuAcciones(controler.getJugador(), controler.getEstadoMesa());
         });
         ejecutador.put(Menu.TURNO_DEALER, () -> {
-           ventanaMesa.imprimirAreaDeInformacion(null, controler. getEstadoMesa(), null);
-           ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), -1);
-           ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
+            ventanaMesa.imprimirAreaDeInformacion(null, controler. getEstadoMesa(), null);
+            ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), -1);
+            ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
         });
         ejecutador.put(Menu.GANANCIAS_REPARTIDAS, () -> {
-           ventanaMesa.imprimirAreaDeInformacion(null, controler.getEstadoMesa(), null);
-           ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), -1);
-           ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
+            ventanaMesa.imprimirAreaDeInformacion(null, controler.getEstadoMesa(), null);
+            ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), -1);
+            ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
         });
         ejecutador.put(Menu.FINALIZAR, () -> {
-           ventanaMesa.imprimirAreaDeInformacion(null, controler.getEstadoMesa(), null);
-           ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), null, controler.getEstadoMesa(), -1);
-           ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
+            ventanaMesa.imprimirAreaDeInformacion(null, controler.getEstadoMesa(), null);
+            ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), null, controler.getEstadoMesa(), -1);
+            ventanaMesa.imprimirMenuAcciones(null, controler.getEstadoMesa());
         });
         ejecutador.put(Menu.APOSTAR_MANO, () -> ventanaMesa.pedirApuesta(controler.getSaldoJugador(), Menu.APOSTAR_MANO));
         ejecutador.put(Menu.PEDIR_APUESTA_CONFIRMACION, () -> ventanaMesa.pedirApuesta(controler.getSaldoJugador(), Menu.PEDIR_APUESTA_CONFIRMACION));
         ejecutador.put(Menu.ELIMINAR_MANO, () -> ventanaMesa.eliminarMano(controler.getManosJugador()));
         ejecutador.put(Menu.ESPERAR, () -> ventanaMesa.aEsperar());
-        ejecutador.put(Menu.JUGADORES_INSCRIPTOS, () -> ventanaMesa.mostrarDatosIncriptos(controler.getInscriptos(), controler.getJugador()));
+        ejecutador.put(Menu.JUGADORES_INSCRIPTOS, () -> ventanaMesa.mostrarDatosIncriptos(controler.getInscriptosMesa(), controler.getJugador()));
         ejecutador.put(Menu.ACCIONES_MESA, () -> ventanaMesa.imprimirMenuAcciones(controler.getJugador(), controler.getEstadoMesa()));
         ejecutador.put(Menu.CAMBIO_ESTADO, () -> {
             ventanaMesa.imprimirAreaDeInformacion(controler.getJugador(), controler.getEstadoMesa(), controler.getTurnoJugador());
@@ -185,11 +193,57 @@ public class VistaConsola extends JFrame implements IVista {
             ventanaMesa.imprimirAreaDeJuego(controler.getJugador(), controler.getDealer(), controler.getEstadoMesa(), controler.manoEnTurno());
 
             if(ventanaMesa.getMenu() == Menu.JUGADORES_INSCRIPTOS){
-                ventanaMesa.mostrarDatosIncriptos(controler.getInscriptos(), controler.getJugador());
+                ventanaMesa.mostrarDatosIncriptos(controler.getInscriptosMesa(), controler.getJugador());
             }
 
             ventanaMesa.imprimirAreaDeInformacion(controler.getJugador(), controler.getEstadoMesa(), controler.getTurnoJugador());
         });
         ejecutador.put(Menu.ACTUALIZAR_INFORMACION, () -> ventanaMesa.imprimirAreaDeInformacion(controler.getJugador(), controler.getEstadoMesa(), controler.getTurnoJugador()));
+    }
+
+    private String mensajeError(Eventos situacion){
+        String mensaje = "";
+
+        switch (situacion){
+            case ACCION_INVALIDA -> mensaje = "INGRESO INVALIDO! POR FAVOR, INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS!";
+            case SIN_JUGADORES_GUARDADOS -> mensaje = "ACCION INVALIDA! NO HAY JUGADORES GUARDADOS PARA CARGAR!";
+            case JUGADOR_YA_CONECTADO -> mensaje = "JUGADOR YA INSCRIPTO DENTRO DEL CASINO! INTENTE CON UNO DIFERENTE!";
+            case JUGADOR_PERDIO ->  mensaje = "USTED NO POSEE DINERO PARA PODER JUGAR. SALGA DEL JUEGO!";
+            case JUGADOR_NO_ESTA -> mensaje = "EL JUGADOR NO SE ENCUENTRA EN LA LISTA DE ESPERA! ACCION INVALIDA!";
+            case JUGADOR_NO_CONECTADO -> mensaje = "EL JUGADOR NO SE ENCUENTRA CONECTADO DENTRO DEL CASINO! ACCION INVALIDA!";
+            case JUGADOR_EN_LA_MESA -> mensaje = "EL JUGADOR SE ENCUENTRA JUGANDO EN LA MESA! NO PUEDE SALIR EN ESTE MOMENTO!";
+            case INGRESO_INVALIDO -> mensaje = "INGRESO INVALIDO! INGRESE UN MONTO COMO SE SOLICITO ANTERIORMENTE!";
+            case SALDO_INSUFICIENTE -> mensaje = "EL MONTO INGRESADO ES MAYOR AL QUE POSEE!";
+            case LA_MESA_YA_INICIO, SIN_LUGARES_DISPONIBLES -> mensaje = "LA MESA YA INICIO LA RONDA! NO SE PUDO UNIR, INTENTELO MAS TARDE! INSCRIBASE A LA LISTA DE ESPERA!";
+            case MESA_ACEPTANDO_INSCRIPCIONES -> mensaje = "LA MESA TODAVIA ESTA ACEPTANDO INSCRIPCIONES! APURATE A INSCRIBIRTE!";
+            case GENTE_ESPERANDO -> mensaje = "DEBE INSCRIBIRSE A LA LISTA DE ESPERA! LA MESA INICIO Y HAY GENTE ESPERANDO!";
+            case JUGADOR_YA_EN_LISTA -> mensaje = String.format("EL JUGADOR YA ESTA EN LA LISTA DE ESPERA. SU POSICION ES: %d!", controler.posicionDeEspera());
+            case JUGADOR_CONFIRMADO -> mensaje = "\"USTED YA CONFIRMO SU PARTICIPACION... ACCION NO REALIZABLE!";
+            case ULTIMA_MANO -> mensaje = "ACCION NO REALIZABLE DEBIDO A QUE SOLO POSEE UNA MANO.";
+            case DEBE_ESPERAR -> {
+                EstadoDeLaMesa estado = controler.getEstadoMesa();
+                if(estado == EstadoDeLaMesa.REPARTIENDO_CARTAS){
+                    mensaje = "LAS CARTAS SE ESTAN REPARTIENDO, ESPERE A QUE EL DEALER TERMINE DE REPARTIRLAS...";
+                }
+
+                else if(estado == EstadoDeLaMesa.TURNO_DEALER){
+                    mensaje = "EL DEALER ESTA JUGANDO SU TURNO, ESPERE A QUE TERMINE...";
+                }
+
+                else{
+                    mensaje = "ESPERE A QUE LOS DEMAS JUGADORES CONFIRMEN PARA PODER PASAR AL SIGUIENTE ESTADO...";
+                }
+            }
+            case YA_JUGO_SU_TURNO -> mensaje = "USTED YA JUGO SU TURNO! NO PUEDE REALIZAR ESTA ACCION...";
+            case NO_ES_SU_TURNO -> mensaje = "NO ES SU TURNO! DEBE ESPERAR A QUE LOS DEMAS JUGADORES TERMINEN DE JUGAR EL SUYO...";
+            case NO_ES_TURNO_INICIAL -> mensaje = "NO ES EL TURNO INICIAL, NO PUEDE REALIZAR LA ACCION";
+            case DEALER_NO_CUMPLE -> mensaje = "EL DEALER NO CUMPLE LA CONDICION PARA REALIZAR ESTA ACCION...";
+            case MANO_YA_ASEGURADA -> mensaje = "USTED YA ASEGURO SU MANO, NO PUEDE VOLVER A REALIZAR ESTA ACCION...";
+            case MANO_NO_CUMPLE ->  mensaje = "LA MANO NO CUMPLE LA CONDICION PARA SPLITEAR, ACCION NO REALIZABLE...";
+            case UNICO_JUGADOR -> mensaje = "ACCION INVALIDA, DEBIDO A QUE USTED ES EL UNICO INTEGRANTE DEL JUEGO!";
+
+        }
+
+        return mensaje;
     }
 }

@@ -233,10 +233,11 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
         switch (estado){
             case ACEPTANDO_INSCRIPCIONES -> {
                 areaDeJuego.append("\n\t\t\t DEALER INFORMA:\n\n\n");
-                areaDeJuego.append("\t LAS INSCRIPCIONES TODAVIA ESTAN ABIERTAS... PUEDE SEGUIR REALIZANDO APUESTAS,\n");
-                areaDeJuego.append("\t ELIMINAR LAS MISMAS, HASTA QUE USTED CONFIRME SU PARTICIPACION.\n");
-                areaDeJuego.append("\t UNA VEZ QUE TODOS CONFIRMEN LA PARTICIPACION Y/O SE ACABEN LOS LUGARES EN LA MESA\n");
-                areaDeJuego.append("\t EL JUEGO COMENZARA AUTOMATICAMENTE...\n");
+                areaDeJuego.append("\t LAS INSCRIPCIONES TODAVIA ESTAN ABIERTAS... PUEDE SEGUIR\n");
+                areaDeJuego.append("\t REALIZANDO APUESTAS, ELIMINAR LAS MISMAS, HASTA QUE USTED\n");
+                areaDeJuego.append("\t CONFIRME SU PARTICIPACION. UNA VEZ QUE TODOS CONFIRMEN LA\n");
+                areaDeJuego.append("\t PARTICIPACION Y/O SE ACABEN LOS LUGARES EN LA MESA EL JUEGO\n");
+                areaDeJuego.append("\t COMENZARA AUTOMATICAMENTE...\n");
             }
 
             case REPARTIENDO_CARTAS, TURNO_DEALER, TURNO_JUGADOR -> {
@@ -248,11 +249,11 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
                 int i = 0;
                 for(IManoJugador m: manos){
                     if(i == manoEnTurno){
-                        areaDeJuego.append(String.format("MANO %d <--- actual en juego: %s\n", i + 1, m.descripcion()));
+                        areaDeJuego.append(String.format("MANO %d <--- actual en juego: %s\n\n", i + 1, m.descripcion()));
                     }
 
                     else{
-                        areaDeJuego.append(String.format("MANO %d: %s\n", i + 1, m.descripcion()));
+                        areaDeJuego.append(String.format("MANO %d: %s\n\n", i + 1, m.descripcion()));
                     }
 
                     i++;
@@ -311,8 +312,10 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
                 areaDeAcciones.append("3.  RETIRARME DE LA MESA.\n");
                 areaDeAcciones.append("4.  CONFIRMAR PARTICIPACION.\n\n\n");
                 areaDeAcciones.append("INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS...\n\n\n\n");
-                areaDeAcciones.append(String.format("\t\tLOS DATOS DE USTED:\n\nJUGADOR: %s  \nSALDO ACTUAL: $%.2f  \nMAXIMO HISTORICO: $%.2f", jugador.getNombre(), jugador.getSaldoJugador(), jugador.getMaximoHistorico()));
-
+                areaDeAcciones.append(" DATOS DEL JUGADOR:\n\n");
+                areaDeAcciones.append(String.format(" JUGADOR: %s\n", jugador.getNombre()));
+                areaDeAcciones.append(String.format(" SALDO: $%.2f\n", jugador.getSaldoJugador()));
+                areaDeAcciones.append(String.format(" MAXIMO HISTORICO: $%.2f\n\n", jugador.getMaximoHistorico()));
                 actualizarPlaceHolder("INGRESE UNA OPCION MENCIONADA EN EL APARTADO DE ACCIONES...");
             }
 
@@ -333,7 +336,10 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
                 areaDeAcciones.append("6.   DOBLAR MANO.\n");
                 areaDeAcciones.append("7.   MOSTRAR A LOS DEMAS JUGADORES.\n");
                 areaDeAcciones.append("INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS...\n\n");
-                areaDeAcciones.append(String.format("\t\tLOS DATOS DE USTED\n\nJUGADOR: %s  \nSALDO ACTUAL: $%.2f  \nMAXIMO HISTORICO: $%.2f", jugador.getNombre(), jugador.getSaldoJugador(), jugador.getMaximoHistorico()));
+                areaDeAcciones.append(" DATOS DEL JUGADOR:\n\n");
+                areaDeAcciones.append(String.format(" JUGADOR: %s\n", jugador.getNombre()));
+                areaDeAcciones.append(String.format(" SALDO: $%.2f\n", jugador.getSaldoJugador()));
+                areaDeAcciones.append(String.format(" MAXIMO HISTORICO: $%.2f\n\n", jugador.getMaximoHistorico()));
 
                 actualizarPlaceHolder("INGRESE UNA OPCION MENCIONADA EN EL APARTADO DE ACCIONES...");
             }
@@ -350,7 +356,8 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
             case REPARTIENDO_GANANCIAS -> {
                 menu = Menu.GANANCIAS_REPARTIDAS;
 
-                areaDeAcciones.append("LAS GANANCIAS FUERON REPARTIDAS EN BASE A LOS RESULTADOS MOSTRADOS...\n");
+                areaDeAcciones.append("LAS GANANCIAS FUERON REPARTIDAS EN BASE\n");
+                areaDeAcciones.append("A LOS RESULTADOS MOSTRADOS...\n\n");
                 areaDeAcciones.append("INGRESE '0' PARA PODER PASAR AL SIGUIENTE ESTADO Y PODER FINALIZAR LA PARTIDA\n");
 
                 actualizarPlaceHolder("INGRESE '0' PARA CONTINUAR...");

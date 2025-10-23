@@ -41,7 +41,7 @@ public class Dealer implements IDealer {
 
             for(ManoJugador m: manos){
                 Apuesta envite = m.getEnvite();
-                envite.calcularGanancias(mano.getEstado(), m.getEstado(), mano.getTotalMano(), m.getTotalMano());
+                envite.calcularGanancias(mano.getEstado(), m.getEstado(), mano.getTotal(), m.getTotal());
 
                 j.actualizarSaldo(envite.getGanancias());
                 j.actualizarMaximoHistorico();
@@ -80,6 +80,6 @@ public class Dealer implements IDealer {
 
     @Override
     public String descripcion(){
-        return String.format("\t\t\t DEALER: \nMANO DEALER: %s\n\n\n", mano.descripcion());
+        return String.format("DEALER:\n\nMANO DEL DEALER: %s\n", mano.descripcion());
     }
 }

@@ -7,24 +7,29 @@ import ar.edu.unlu.poo.modelo.eventos.Eventos;
 import java.util.List;
 
 public interface ICasino {
-    List<IJugador> getJugadoresConectados(Jugador jug);
+    List<IJugador> getJugadoresConectados(IJugador jug);
 
-    IMesa getMesa(Jugador j);
+    IMesa getMesa(IJugador j);
 
     int getLongitudListaDeEspera();
 
-    int miPosicionEnListaDeEspera(Jugador j);
+    int miPosicionEnListaDeEspera(IJugador j);
 
-    Eventos unirmeAlCasino(Jugador j, Observador o);
+    IJugador unirmeAlCasino(String nombre, Observador o);
 
-    Eventos irmeDelCasino(Jugador j, Observador o);
+    Eventos irmeDelCasino(IJugador j, Observador o);
 
-    Eventos unirmeALaListaDeEspera(Jugador j, double monto, Observador o);
+    Eventos unirmeALaListaDeEspera(IJugador j, double monto, Observador o);
 
-    Eventos salirListaDeEspera(Jugador j);
+    Eventos salirListaDeEspera(IJugador j);
 
-    Eventos unirmeALaMesa(Jugador j, double monto, Observador o);
+    Eventos unirmeALaMesa(IJugador j, double monto, Observador o);
 
-    //funcion que solo sirve para el testing, si no se testea comentarla.
-    //Mesa getMesa();
+    Eventos hayJugadoresGuardados();
+
+    List<IJugador> jugadoresGuardados();
+
+    List<String> getRankingMundial(IJugador jug);
+
+    Jugador getIjugadorConectado(String nombre);
 }

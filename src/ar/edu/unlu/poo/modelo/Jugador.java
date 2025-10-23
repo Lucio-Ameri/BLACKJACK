@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Jugador implements IJugador, Serializable {
-    List<ManoJugador> manos;
+    private List<ManoJugador> manos;
     private Dinero saldo;
     private String nombre;
     private double maximoHistorico;
@@ -33,13 +33,7 @@ public class Jugador implements IJugador, Serializable {
 
     @Override
     public List<IManoJugador> getManosJugadorInterfaz(){
-        List<IManoJugador> manosI = new ArrayList<IManoJugador>();
-
-        for(ManoJugador m: manos){
-            manosI.add(m);
-        }
-
-        return manosI;
+        return new ArrayList<IManoJugador>(manos);
     }
 
     @Override
@@ -60,7 +54,7 @@ public class Jugador implements IJugador, Serializable {
     }
 
     public boolean transferenciaRealizable(double cantidad){
-        return saldo.puedoRealizarLaTransferencia(cantidad);
+        return saldo.puedoTransferir(cantidad);
     }
 
     public void actualizarSaldo(double monto){
@@ -89,38 +83,17 @@ public class Jugador implements IJugador, Serializable {
     }
 
     @Override
-    public Eventos guardarJugador(){
-        if(saldo.tengoDinero()){
-            List<Jugador> jugadores = Serializador.cargarJugadoresGuardados();
-
-            boolean agregar = true;
-
-            for(Jugador j: jugadores){
-                if(nombre.equals(j.getNombre())){
-                    agregar = false;
-                    break;
-                }
-            }
-
-            if(agregar){
-                jugadores.add(this);
-                Serializador.guardarJugadores(jugadores);
-                return Eventos.JUGADOR_GUARDADO;
-            }
-
-            return Eventos.JUGADOR_YA_GUARDADO;
-        }
-
-        return Eventos.NO_POSEE_DINERO_PARA_GUARDAR;
+    public String datosPrincipales(){
+        return String.format("JUGADOR ' %s '  -  SALDO: %s  -  MAXIMO HISTORICO: $%.2f\n\n", nombre, saldo.descripcion(), maximoHistorico);
     }
 
     @Override
     public String descripcion(){
-        String s = String.format("JUGADOR %s  -  SALDO: %s  -  MAXIMO HISTORICO: %.2f\n\n", nombre, saldo.descripcion(), maximoHistorico);
+        String s = String.format("JUGADOR ' %s '  -  SALDO: %s  -  MAXIMO HISTORICO: $%.2f\n\n", nombre, saldo.descripcion(), maximoHistorico);
 
         int i = 1;
         for(ManoJugador m: manos){
-            s += String.format("MANO %d: %s\n", i, m.descripcion());
+            s += String.format("MANO %d: %s\n\n", i, m.descripcion());
             i++;
         }
 

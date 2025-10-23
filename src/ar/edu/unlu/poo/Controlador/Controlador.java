@@ -8,88 +8,100 @@ import ar.edu.unlu.poo.modelo.estados.EstadoDeLaMesa;
 import ar.edu.unlu.poo.modelo.eventos.Accion;
 import ar.edu.unlu.poo.modelo.eventos.Eventos;
 import ar.edu.unlu.poo.modelo.eventos.Notificacion;
-import ar.edu.unlu.poo.modelo.persistencia.Serializador;
-import ar.edu.unlu.poo.modelo.persistencia.TablaPuntuacion;
 import ar.edu.unlu.poo.vista.Consola.Menu;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
-public class Controlador implements Observador{
+public class Controlador implements Observador, IControlador {
     private IVista vista;
     private ICasino casino;
     private IMesa mesa;
     private IJugador jugador;
 
-    public Controlador(ICasino modelo){
+    public Controlador(ICasino modelo) {
         this.casino = modelo;
         this.mesa = null;
-        this.jugador = null;
         this.vista = null;
+        this.jugador = null;
     }
 
-    private void setJugadorActual(Jugador j){
-        this.jugador = j;
+    private void setMesa(IMesa m) {
+        this.mesa = m;
     }
 
-    private void setMesa(IMesa mesa){
-        this.mesa = mesa;
-    }
-
-    public void setVista(IVista v){
+    @Override
+    public void setVista(IVista v) {
         this.vista = v;
     }
 
-    public IJugador getJugador(){
+    private void setJugadorActual(IJugador j) {
+        this.jugador = j;
+    }
+
+    @Override
+    public IJugador getJugador() {
         return jugador;
     }
 
-    public int getPosicionDeEspera(){
-        return casino.miPosicionEnListaDeEspera((Jugador) jugador);
+    @Override
+    public List<IManoJugador> getManosJugador(){
+        return jugador.getManosJugadorInterfaz();
     }
 
+    @Override
+    public List<IJugador> getGuardados(){
+        return casino.jugadoresGuardados();
+    }
+
+    @Override
+    public List<IJugador> getInscriptosMesa(){
+        return mesa.getInscriptos();
+    }
+
+    @Override
+    public List<IJugador> getConectadosCasino(){
+        return casino.getJugadoresConectados(jugador);
+    }
+
+    @Override
     public List<String> getRanking(){
-        TablaPuntuacion tabla = Serializador.cargarTablaDePuntuacion();
-        return tabla.obtenerMejoresJugadores();
+        return casino.getRankingMundial(jugador);
     }
 
+    @Override
+    public int posicionDeEspera(){
+        return casino.miPosicionEnListaDeEspera(jugador);
+    }
+
+    @Override
     public double getSaldoJugador(){
         return jugador.getSaldoJugador();
     }
 
-    public List<IJugador> getJugadoresGuardados(){
-        List<Jugador> jugadores = Serializador.cargarJugadoresGuardados();
-        return new ArrayList<IJugador>(jugadores);
-    }
-
-    public List<IJugador> getJugadoresConectados(){
-        return casino.getJugadoresConectados((Jugador) jugador);
-    }
-
-    public List<IJugador> getInscriptos(){
-        return mesa.getInscriptos();
-    }
-
+    @Override
     public IDealer getDealer(){
         return mesa.getDealer();
     }
 
+    @Override
     public EstadoDeLaMesa getEstadoMesa(){
         return mesa.getEstado();
     }
 
+    @Override
     public String getTurnoJugador(){
         return mesa.getJugadorTurnoActual();
     }
 
+    @Override
     public int manoEnTurno(){
-        List<IManoJugador>manos = jugador.getManosJugadorInterfaz();
+        List<IManoJugador> manos = jugador.getManosJugadorInterfaz();
         EstadoDeLaMano estado;
 
         for(IManoJugador m: manos){
             estado = m.getEstado();
+
             if(estado == EstadoDeLaMano.EN_JUEGO || estado == EstadoDeLaMano.TURNO_INICIAL){
                 return manos.indexOf(m);
             }
@@ -98,225 +110,133 @@ public class Controlador implements Observador{
         return -1;
     }
 
-    public IManoJugador getManoActual(){
-        List<IManoJugador> manos = jugador.getManosJugadorInterfaz();
-        EstadoDeLaMano estado;
-
-        for(IManoJugador m: manos){
-            estado = m.getEstado();
-
-            if(estado == EstadoDeLaMano.EN_JUEGO || estado == EstadoDeLaMano.TURNO_INICIAL){
-                return (ManoJugador) m;
-            }
-        }
-
-        return null;
-    }
-
-    public List<IManoJugador> getManosJugador(){
-        return jugador.getManosJugadorInterfaz();
-    }
-
-    private boolean hayJugadoresGuardados(){
-        List<Jugador> jugadores = Serializador.cargarJugadoresGuardados();
-        return !jugadores.isEmpty();
-    }
-
-    public void procesarLoggin(Menu estado, String entrada){
-        switch (estado){
+    @Override
+    public void procesarLoggin(Menu estado, String ingreso) {
+        switch (estado) {
             case LOGGIN -> {
-                switch (entrada){
-                    case "1":
-                        if (hayJugadoresGuardados()) {
-                            vista.mostrarMenu(Menu.CARGAR_JUGADORES, null);
-                        }
+                switch (ingreso) {
+                    case "1" -> vista.mostrarMenu(Menu.CARGAR_JUGADORES, casino.hayJugadoresGuardados());
 
-                        else {
-                            vista.mostrarMenu(null, "NO HAY JUGADORES GUARDADOS PARA CARGAR!");
-                        }
-                        break;
+                    case "2" -> vista.mostrarMenu(Menu.CREAR_JUGADOR, null);
 
-                    case "2":
-                        vista.mostrarMenu(Menu.CREAR_JUGADOR, null);
-                        break;
+                    case "0" -> System.exit(0);
 
-                    case "0":
-                        System.exit(0);
-                        break;
-
-                    default:
-                        vista.mostrarMenu(null, "INGRESO INVALIDO! POR FAVOR, INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS!");
-                        break;
+                    default -> vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
                 }
             }
 
             case CARGAR_JUGADORES -> {
-
-                try{
-                    int valor = Integer.parseInt(entrada);
+                try {
+                    int valor = Integer.parseInt(ingreso);
                     validarJugadorGuardado(valor);
-                }
-                catch (NumberFormatException e){
-                    vista.mostrarMenu(null, "INGRESO INVALIDO!, DEBE INGRESAR UNA DE LAS ANTERIORES OPCIONES!");
+                } catch (NumberFormatException e) {
+                    vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
                 }
             }
 
             case CREAR_JUGADOR -> {
-                if(!entrada.matches("^[a-zA-Z]+$")) {
+                if (!ingreso.matches("^[a-zA-Z]+$")) {
 
-                    if(entrada.equals("0")){
+                    if (ingreso.equals("0")) {
                         vista.mostrarMenu(Menu.LOGGIN, null);
-                    }
-
-                    else{
-                        vista.mostrarMenu(null, "NOMBRE INVALIDO! SIGA LAS INSTRUCCIONES MENCIONADAS!");
+                    } else {
+                        vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
                     }
 
                     return;
                 }
 
-                validarCrearJugador(entrada);
+                validarCrearJugador(ingreso);
             }
         }
     }
 
-    private void validarJugadorGuardado(int entrada){
-        List<Jugador> jugadores = Serializador.cargarJugadoresGuardados();
+    private void validarJugadorGuardado(int ingreso) {
+        List<IJugador> jugadores = casino.jugadoresGuardados();
 
-        if(entrada == 0){
+        if (ingreso == 0) {
             vista.mostrarMenu(Menu.LOGGIN, null);
-        }
+        } else if (ingreso > 0 && ingreso <= jugadores.size()) {
 
-        else if(entrada > 0 && entrada <= jugadores.size()){
-            setJugadorActual(jugadores.get(entrada - 1));
+            setJugadorActual(casino.unirmeAlCasino(jugadores.get(ingreso - 1).getNombre(), this));
 
-            Eventos ev = casino.unirmeAlCasino((Jugador) jugador, this);
-
-            if(ev == Eventos.ACCION_REALIZADA){
-                Serializador.eliminarJugadorGuardado((Jugador) jugador);
+            if (jugador != null) {
                 vista.mostrarMenu(Menu.CASINO, null);
+            } else {
+                vista.mostrarMenu(null, Eventos.JUGADOR_YA_CONECTADO);
             }
-
-            else{
-                vista.mostrarMenu(null, "JUGADOR YA INSCRIPTO DENTRO DEL CASINO! INTENTE CON OTRO!");
-            }
-        }
-
-        else{
-            vista.mostrarMenu(null, "INGRESO INVALIDO! INGRESE UNA DE LAS ANTERIORES OPCIONES!");
+        } else {
+            vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
         }
     }
 
-    private void validarCrearJugador(String entrada){
-        List<String> lista = Serializador.cargarListaNombresUsados();
-        if (lista == null) {
-            lista = new ArrayList<>();
-        }
+    private void validarCrearJugador(String ingreso) {
+        setJugadorActual(casino.unirmeAlCasino(ingreso, this));
 
-        String nombre = entrada;
-        int n;
-
-        do {
-            n = ThreadLocalRandom.current().nextInt(1, 1000);
-            nombre = "%s#%03d".formatted(entrada, n);
-        }
-        while (lista.contains(nombre));
-
-        lista.add(nombre);
-        Serializador.guardarListaNombresUsados(lista);
-
-        setJugadorActual(new Jugador(nombre, 1000.0));
-
-        Eventos ev = casino.unirmeAlCasino((Jugador) jugador, this);
-        if (ev == Eventos.ACCION_REALIZADA) {
+        if (jugador != null) {
             vista.mostrarMenu(Menu.CASINO, null);
-        }
-
-        else {
-            vista.mostrarMenu(null, "NO SE PUDO UNIR AL JUGADOR AL CASINO!");
+        } else {
+            vista.mostrarMenu(null, Eventos.JUGADOR_YA_CONECTADO);
         }
     }
 
-    public void procesarCasino(Menu estado, String entrada){
-        switch (estado){
+    @Override
+    public void procesarCasino(Menu estado, String ingreso) {
+        switch (estado) {
             case ACCIONES_CASINO -> {
-                switch (entrada) {
-                    case "1":
-                        if(!jugador.perdio()){
-                            vista.mostrarMenu(Menu.PEIDR_APUESTA_MESA, null);
+                switch (ingreso) {
+                    case "1" -> {
+                        if (jugador.perdio()) {
+                            vista.mostrarMenu(null, Eventos.JUGADOR_PERDIO);
+                        } else {
+                            vista.mostrarMenu(Menu.PEDIR_APUESTA_MESA, null);
                         }
+                    }
 
-                        else{
-                            vista.mostrarMenu(null, "USTED NO POSEE DINERO PARA PODER JUGAR. SALGA DEL JUEGO!");
-                        }
-                        break;
-
-                    case "2":
-                        if(!jugador.perdio()){
+                    case "2" -> {
+                        if (jugador.perdio()) {
+                            vista.mostrarMenu(null, Eventos.JUGADOR_PERDIO);
+                        } else {
                             vista.mostrarMenu(Menu.PEDIR_APUESTA_LISTA, null);
                         }
+                    }
 
-                        else{
-                            vista.mostrarMenu(null, "USTED NO POSEE DINERO PARA PODER JUGAR. SALGA DEL JUEGO!");
-                        }
-                        break;
+                    case "3" -> vista.mostrarMenu(Menu.ACCIONES_CASINO, casino.salirListaDeEspera(jugador));
 
-                    case "3":
-                        switch (casino.salirListaDeEspera((Jugador) jugador)){
-                            case ACCION_REALIZADA -> {
-                                vista.mostrarMenu(Menu.ACCIONES_CASINO, null);
-                            }
+                    case "4" -> vista.mostrarMenu(Menu.RANKING, null);
 
-                            case JUGADOR_NO_ESTA -> {
-                                vista.mostrarMenu(null, "ACCION INVALIDA! USTED NO ESTA EN LA LISTA DE ESPERA!");
-                            }
-                        }
-                        break;
+                    case "0" -> irmeDelCasino();
 
-                    case "4":
-                        vista.mostrarMenu(Menu.RANKING, null);
-                        break;
-
-                    case "0":
-                        irmeCasino();
-                        break;
-
-                    default:
-                        vista.mostrarMenu(null, "ACCION INVALIDA! INGRESE UNA OPCION DE LAS MENCIONADAS ANTERIORMENTE!");
-                        break;
+                    default -> vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
                 }
             }
 
             case RANKING -> {
-                switch (entrada){
-                    case "0":
-                        vista.mostrarMenu(Menu.ACCIONES_CASINO, null);
-                        break;
+                switch (ingreso){
+                    case "0" -> vista.mostrarMenu(Menu.ACCIONES_CASINO, null);
 
-                    default:
-                        vista.mostrarMenu(null, "OPCION INVALIDA! INGRESE '0' COMO SE MENCIONO PARA VOLVER AL MENU ACCIONES!");
-                        break;
+                    default -> vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
                 }
             }
 
-            case PEIDR_APUESTA_MESA, PEDIR_APUESTA_LISTA ->{
-                if(entrada.equals("-")){
+            case PEDIR_APUESTA_MESA, PEDIR_APUESTA_LISTA -> {
+                if(ingreso.equals("-")){
                     vista.mostrarMenu(Menu.ACCIONES_CASINO, null);
                 }
 
-                if(entrada.isEmpty() || !entrada.matches("\\d+(?:[.,]\\d+)?")){
-                    vista.mostrarMenu(null, "INGRESO INVALIDO! INGRESE UN MONTO COMO SE SOLICITO ANTERIORMENTE!");
+                if(ingreso.isEmpty() || !ingreso.matches("\\d+(?:[.,]\\d+)?")){
+                    vista.mostrarMenu(null, Eventos.INGRESO_INVALIDO);
                 }
 
                 try{
-                    double monto = Double.parseDouble(entrada.replace(',', '.'));
+                    double monto = Double.parseDouble(ingreso.replace(',', '.'));
                     if(monto < 1.0){
-                        vista.mostrarMenu(null, "INGRESO INVALIDO! POR FAVOR, INGRESE UN MONTO >= '$1.0'!");
+                        vista.mostrarMenu(null, Eventos.INGRESO_INVALIDO);
                         return;
                     }
 
                     switch (estado){
-                        case PEIDR_APUESTA_MESA -> {
+                        case PEDIR_APUESTA_MESA -> {
                             ingresarMesa(monto);
                         }
 
@@ -326,127 +246,83 @@ public class Controlador implements Observador{
                     }
                 }
                 catch (NumberFormatException e){
-                    vista.mostrarMenu(null, "INGRESO INVALIDO! INGRESE UN MONTO COMO SE SOLICITO ANTERIORMENTE!");
+                    vista.mostrarMenu(null, Eventos.INGRESO_INVALIDO);
                 }
             }
         }
     }
 
-    private void irmeCasino(){
-        Eventos ev = casino.irmeDelCasino((Jugador) jugador, this);
+    private void irmeDelCasino(){
+        Eventos ev = casino.irmeDelCasino(jugador, this);
 
         switch (ev){
-            case JUGADOR_EN_LA_MESA -> {
-                vista.mostrarMenu(null, "EL JUGADOR SE ENCUENTRA JUGANDO EN LA MESA! NO PUEDE SALIR EN ESTE MOMENTO!");
-            }
-
-            case JUGADOR_NO_ESTA -> {
-                vista.mostrarMenu(null, "EL JUGADOR NO ESTA EN EL CASINO! ACCION INVALIDA!");
-            }
-
             case ACCION_REALIZADA -> {
-                jugador.guardarJugador();
                 jugador = null;
                 vista.mostrarMenu(Menu.LOGGIN, null);
             }
-        }
 
+            default -> vista.mostrarMenu(null, ev);
+        }
     }
 
     private void ingresarMesa(double monto){
-        Eventos ev = casino.unirmeALaMesa((Jugador) jugador, monto, this);
+        Eventos ev = casino.unirmeALaMesa(jugador, monto, this);
 
-        switch (ev){
-            case JUGADOR_NO_ESTA -> vista.mostrarMenu(null, "JUGADOR NO SE ENCUENTRA EN EL CASINO! ACCION NO REALIZABLE");
-            case LA_MESA_YA_INICIO, SIN_LUGARES_DISPONIBLES -> vista.mostrarMenu(null, "LA MESA YA INICIO LA RONDA! NO SE PUDO UNIR, INTENTELO MAS TARDE! INSCRIBASE A LA LISTA DE ESPERA!");
-            case JUGADOR_EN_LA_MESA, JUGADOR_YA_INSCRIPTO -> vista.mostrarMenu(null, "JUGADOR YA EN LA MESA!");
-            case GENTE_ESPERANDO -> vista.mostrarMenu(null, "DEBE INSCRIBIRSE A LA LISTA DE ESPERA! LA MESA INICIO Y HAY GENTE ESPERANDO!");
-            case SALDO_INSUFICIENTE -> vista.mostrarMenu(null, "EL MONTO INGRESADO ES MAYOR AL QUE POSEE!");
-            case ACCION_REALIZADA -> {
-                setMesa(casino.getMesa((Jugador) jugador));
-                vista.mostrarMenu(Menu.MESA, null);
-            }
+        if(ev != Eventos.ACCION_REALIZADA){
+            vista.mostrarMenu(null, ev);
         }
     }
 
     private void ingresarListaEspera(double monto){
-        Eventos ev = casino.unirmeALaListaDeEspera((Jugador) jugador, monto, this);
-
+        Eventos ev = casino.unirmeALaListaDeEspera(jugador, monto, this);
         switch (ev){
-            case JUGADOR_NO_ESTA -> vista.mostrarMenu(null, "JUGADOR NO SE ENCUENTRA EN EL CASINO! ACCION NO REALIZABLE");
+            case ACCION_REALIZADA -> vista.mostrarMenu(Menu.ACCIONES_CASINO, null);
 
-
-            case JUGADOR_EN_LA_MESA -> {
-                vista.mostrarMenu(null, "JUGADOR YA SE ENCUENTRA EN LA MESA");
-            }
-
-            case MESA_ACEPTANDO_INSCRIPCIONES -> {
-                vista.mostrarMenu(null, "LA MESA TODAVIA ESTA ACEPTANDO INSCRIPCIONES! APURATE A INSCRIBIRTE!");
-            }
-
-            case JUGADOR_YA_EN_LISTA -> {
-                vista.mostrarMenu(null, String.format("JUGADOR YA ESTA EN LA LISTA DE ESPERA. SU POSICION ES: %d!", casino.miPosicionEnListaDeEspera((Jugador) jugador)));
-            }
-
-            case SALDO_INSUFICIENTE -> {
-                vista.mostrarMenu(null, "EL MONTO INGRESADO ES MAYOR AL QUE POSEE!");
-            }
-
-            case ACCION_REALIZADA -> {
-                vista.mostrarMenu(Menu.ACCIONES_CASINO, null);
-            }
+            default -> vista.mostrarMenu(null, ev);
         }
     }
 
-    public void procesarMesa(Menu estado, String entrada){
-        switch (estado){
+    @Override
+    public void procesarMesa(Menu estado, String ingreso){
+        switch (estado) {
 
             case INSCRIPCIONES -> {
-                switch (entrada){
-                    case "1":
-                        validarSituacionAgregarMano();
-                        break;
 
-                    case "2":
-                        validarSituacionEliminarMano();
-                        break;
+                switch (ingreso) {
+                    case "1" -> validarSituacionAgregarMano();
 
-                    case "3":
-                        validarSituacionRetirarme();
-                        break;
+                    case "2" -> validarSituacionEliminarMano();
 
-                    case "4":
-                        mesa.confirmarParticipacion((Jugador) jugador);
+                    case "3" -> validarSituacionRetirarme();
 
-                        if(mesa.getEstado() == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES){
+                    case "4" -> {
+                        mesa.confirmarParticipacion(jugador);
+
+                        if (mesa.getEstado() == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES) {
                             vista.mostrarMenu(Menu.ESPERAR, null);
                         }
-                        break;
-
-                    default:
-                        vista.mostrarMenu(null, "INGRESO INVALIDO! INGRESE UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS...");
-                        break;
+                    }
                 }
             }
 
             case REPARTIENDO -> {
                 if (mesa.getEstado() == EstadoDeLaMesa.REPARTIENDO_CARTAS) {
-                    vista.mostrarMenu(null, "LAS CARTAS SE ESTAN REPARTIENDO, ESPERE A QUE EL DEALER TERMINE DE REPARTIRLAS...");
+                    vista.mostrarMenu(null, Eventos.DEBE_ESPERAR);
                 }
             }
 
             case TURNO_JUGADOR -> {
                 List<String> requiereMano = Arrays.asList("1","2","3","4","5","6");
-                if (requiereMano.contains(entrada) && getManoActual() == null) {
-                    vista.mostrarMenu(null, "USTED YA JUGO SU TURNO! NO PUEDE REALIZAR ESTA ACCION...");
+                if (requiereMano.contains(ingreso) && manoEnTurno() == -1) {
+                    vista.mostrarMenu(null, Eventos.YA_JUGO_SU_TURNO);
                 }
 
-                else if(requiereMano.contains(entrada) && !mesa.esMiTurno((Jugador) jugador)){
-                    vista.mostrarMenu(null, "NO ES SU TURNO! DEBE ESPERAR A QUE LOS DEMAS JUGADORES TERMINEN DE JUGAR EL SUYO...");
+                else if(requiereMano.contains(ingreso) && !mesa.esMiTurno(jugador)){
+                    vista.mostrarMenu(null, Eventos.NO_ES_SU_TURNO);
                 }
 
                 else {
-                    switch (entrada) {
+                    switch (ingreso) {
                         case "1" -> pedirCarta();
                         case "2" -> quedarme();
                         case "3" -> rendirme();
@@ -459,29 +335,29 @@ public class Controlador implements Observador{
                             }
 
                             else{
-                                vista.mostrarMenu(null, "ACCION INVALIDA, DEBIDO A QUE USTED ES EL UNICO INTEGRANTE DEL JUEGO!");
+                                vista.mostrarMenu(null, Eventos.UNICO_JUGADOR);
                             }
                         }
 
-                        default -> vista.mostrarMenu(null, "ACCION INVALIDA! DEBE INGRESAR UNA DE LAS ANTERIORMENTE MENCIONADAS...");
+                        default -> vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
                     }
 
-                    if(manoEnTurno() == -1 && mesa.esMiTurno((Jugador) jugador)){
-                        mesa.jugadorJuegaSuTurno(Accion.PASAR_TURNO, (Jugador) jugador, null);
+                    if(manoEnTurno() == -1 && mesa.esMiTurno(jugador)){
+                        mesa.jugadorJuegaSuTurno(Accion.PASAR_TURNO, jugador);
                     }
                 }
             }
 
             case TURNO_DEALER -> {
                 if(mesa.getEstado() == EstadoDeLaMesa.TURNO_DEALER) {
-                    vista.mostrarMenu(null, "EL DEALER ESTA JUGANDO SU TURNO, ESPERE A QUE TERMINE...");
+                    vista.mostrarMenu(null, Eventos.DEBE_ESPERAR);
                 }
             }
 
             case GANANCIAS_REPARTIDAS -> {
-                switch (entrada){
+                switch (ingreso){
                     case "0":
-                        mesa.confirmarParticipacion((Jugador) jugador);
+                        mesa.confirmarParticipacion(jugador);
 
                         if(mesa.getEstado() == EstadoDeLaMesa.REPARTIENDO_GANANCIAS) {
                             vista.mostrarMenu(Menu.ESPERAR, null);
@@ -489,52 +365,53 @@ public class Controlador implements Observador{
                         break;
 
                     default:
-                        vista.mostrarMenu(null, "INGRESO INVALIDO! INGRESE LA ACCION ANTERIORMENTE INDICADA...");
+                        vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
                         break;
                 }
             }
 
             case FINALIZAR -> {
-                switch (entrada){
+                switch (ingreso){
                     case "0":
                         if(!jugador.perdio()) {
                             vista.mostrarMenu(Menu.PEDIR_APUESTA_CONFIRMACION, null);
                         }
+
                         else{
-                            vista.mostrarMenu(null, "USTED NO POSE SALDO SUFICIENTE PARA PARTICIPAR EN EL JUEGO. INGRESE '-'...");
+                            vista.mostrarMenu(null, Eventos.JUGADOR_PERDIO);
                         }
                         break;
 
                     case "-":
-                        mesa.confirmarNuevaParticipacion((Jugador) jugador, 0.0, false, this);
+                        mesa.confirmarNuevaParticipacion(jugador, 0.0, false, this);
                         vista.mostrarMenu(Menu.CASINO, null);
                         break;
 
                     default:
-                        vista.mostrarMenu(null, "ACCION INVALIDA, POR FAVOR UNA DE LAS OPCIONES INDICADAS ANTERIORMENTE...");
+                        vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
                         break;
                 }
             }
 
             case APOSTAR_MANO, PEDIR_APUESTA_CONFIRMACION -> {
-                if(entrada.equals("-") && estado == Menu.APOSTAR_MANO){
+                if(ingreso.equals("-") && estado == Menu.APOSTAR_MANO){
                     vista.mostrarMenu(Menu.ACCIONES_MESA, null);
                 }
 
-                if(entrada.isEmpty() || !entrada.matches("\\d+(?:[.,]\\d+)?")){
-                    vista.mostrarMenu(null, "INGRESO INVALIDO! INGRESE UN MONTO COMO SE SOLICITO ANTERIORMENTE!");
+                if(ingreso.isEmpty() || !ingreso.matches("\\d+(?:[.,]\\d+)?")){
+                    vista.mostrarMenu(null, Eventos.INGRESO_INVALIDO);
                 }
 
                 try{
-                    double monto = Double.parseDouble(entrada.replace(',', '.'));
+                    double monto = Double.parseDouble(ingreso.replace(',', '.'));
                     if(monto < 1.0){
-                        vista.mostrarMenu(null, "INGRESO INVALIDO! POR FAVOR, INGRESE UN MONTO >= '$1.0'!");
+                        vista.mostrarMenu(null, Eventos.INGRESO_INVALIDO);
                         return;
                     }
 
                     switch (estado){
                         case PEDIR_APUESTA_CONFIRMACION -> {
-                            mesa.confirmarNuevaParticipacion((Jugador) jugador, monto, true, this);
+                            mesa.confirmarNuevaParticipacion(jugador, monto, true, this);
 
                             if(mesa.getEstado() == EstadoDeLaMesa.FINALIZANDO_RONDA) {
                                 vista.mostrarMenu(Menu.ESPERAR, null);
@@ -547,28 +424,29 @@ public class Controlador implements Observador{
                     }
                 }
                 catch (NumberFormatException e){
-                    vista.mostrarMenu(null, "INGRESO INVALIDO! INGRESE UN MONTO COMO SE SOLICITO ANTERIORMENTE!");
+                    vista.mostrarMenu(null, Eventos.INGRESO_INVALIDO);
                 }
             }
 
             case ELIMINAR_MANO -> {
                 try{
-                    int valor = Integer.parseInt(entrada);
+                    int valor = Integer.parseInt(ingreso);
                     validarManoElegida(valor);
                 }
                 catch (NumberFormatException e){
-                    vista.mostrarMenu(null, "INGRESO INVALIDO!, DEBE INGRESAR UNA DE LAS ANTERIORES OPCIONES!");
+                    vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
                 }
             }
 
             case ESPERAR -> {
-                vista.mostrarMenu(null, "ESPERE A QUE LOS DEMAS JUGADORES CONFIRMEN PARA PODER PASAR AL SIGUIENTE ESTADO...");
+                vista.mostrarMenu(null, Eventos.DEBE_ESPERAR);
             }
 
             case JUGADORES_INSCRIPTOS -> {
-                switch (entrada){
+                switch (ingreso){
                     case "0" -> vista.mostrarMenu(Menu.ACCIONES_MESA, null);
-                    default -> vista.mostrarMenu(null, "INGRESO INVALIDO! DEBE INGRESAR '0' PARA VOLVER AL MENU DE ACCIONES...");
+
+                    default -> vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
                 }
             }
         }
@@ -576,194 +454,120 @@ public class Controlador implements Observador{
 
     private void validarSituacionAgregarMano(){
         if(!jugador.perdio()){
-
-            if(!mesa.confirme((Jugador) jugador)){
-
+            if(!mesa.confirme(jugador)){
                 if(mesa.getEstado() == EstadoDeLaMesa.ACEPTANDO_INSCRIPCIONES){
-
                     if(mesa.hayLugaresDisponibles()){
                         vista.mostrarMenu(Menu.APOSTAR_MANO, null);
                     }
 
-                    else{
-                        vista.mostrarMenu(null, "ACCION NO REALIZABLE DEBIDO A QUE NO QUEDAN LUGARES DISPONIBLES EN LA MESA");
+                    else {
+                        vista.mostrarMenu(null, Eventos.SIN_LUGARES_DISPONIBLES);
                     }
                 }
 
-                else{
-                    vista.mostrarMenu(null, "ACCION NO REALIZABLE, LA MESA YA INICIO");
+                else {
+                    vista.mostrarMenu(null, Eventos.LA_MESA_YA_INICIO);
                 }
             }
 
-            else{
-                vista.mostrarMenu(null, "USTED YA CONFIRMO SU PARTICIPACION... ACCION NO REALIZABLE!");
+            else {
+                vista.mostrarMenu(null, Eventos.JUGADOR_CONFIRMADO);
             }
         }
 
-        else{
-            vista.mostrarMenu(null, "USTED NO POSEE EL DINERO SUFICIENTE PARA REALIZAR ESTA ACCION!");
+        else {
+            vista.mostrarMenu(null, Eventos.JUGADOR_PERDIO);
         }
     }
 
     private void validarSituacionEliminarMano(){
-
-        if(!mesa.confirme((Jugador) jugador)){
-
+        if(!mesa.confirme(jugador)){
             List<IManoJugador> manos = jugador.getManosJugadorInterfaz();
+
             if(manos.size() > 1){
                 vista.mostrarMenu(Menu.ELIMINAR_MANO, null);
             }
 
-            else{
-                vista.mostrarMenu(null, "ACCION NO REALIZABLE DEBIDO A QUE SOLO POSEE UNA MANO.");
+            else {
+                vista.mostrarMenu(null, Eventos.ULTIMA_MANO);
             }
         }
 
-        else{
-            vista.mostrarMenu(null, "USTED YA CONFIRMO SU PARTICIPACION... ACCION NO REALIZABLE!");
+        else {
+            vista.mostrarMenu(null, Eventos.JUGADOR_CONFIRMADO);
         }
     }
 
     private void validarSituacionRetirarme(){
-
-        Eventos ev = mesa.retirarmeDeLaMesa((Jugador) jugador, this);
+        Eventos ev = mesa.retirarmeDeLaMesa(jugador, this);
 
         switch (ev){
-            case JUGADOR_CONFIRMADO -> {
-                vista.mostrarMenu(null, "ACCION NO REALIZABLE! USTED YA CONFIRMO SU PARTICIPACION, ESPERE A QUE INICIE EL JUEGO!");
-            }
-
-            case LA_MESA_YA_INICIO -> {
-                vista.mostrarMenu(null, "EL JUEGO YA INICIO! ACCION NO REALIZABLE!");
-            }
-
             case ACCION_REALIZADA -> {
                 mesa = null;
                 vista.mostrarMenu(Menu.CASINO, null);
             }
+
+            default -> vista.mostrarMenu(null, ev);
         }
     }
 
     private void pedirCarta(){
-        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.PEDIR_CARTA, (Jugador) jugador, (ManoJugador) getManoActual());
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.PEDIR_CARTA, jugador);
 
-        if(ev == Eventos.NO_ES_SU_TURNO){
-            vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
+        if(ev == Eventos.ACCION_REALIZADA){
+            vista.mostrarMenu(null, ev);
         }
     }
 
     private void quedarme(){
-        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.QUEDARME, (Jugador) jugador, (ManoJugador) getManoActual());
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.QUEDARME, jugador);
 
-        if(ev == Eventos.NO_ES_SU_TURNO){
-            vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
+        if(ev != Eventos.ACCION_REALIZADA){
+            vista.mostrarMenu(null, ev);
         }
     }
 
     private void rendirme(){
-        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.RENDIRME, (Jugador) jugador, (ManoJugador) getManoActual());
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.RENDIRME, jugador);
 
-        switch(ev){
-            case NO_ES_SU_TURNO -> {
-                vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
-            }
-
-            case NO_ES_TURNO_INICIAL -> {
-                vista.mostrarMenu(null, "NO ES EL TURNO INICIAL, NO PUEDE REALIZAR LA ACCION");
-            }
+        if(ev != Eventos.ACCION_REALIZADA){
+            vista.mostrarMenu(null, ev);
         }
     }
 
     private void asegurarme(){
-        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.ASEGURARME, (Jugador) jugador, (ManoJugador) getManoActual());
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.ASEGURARME, jugador);
 
-        switch (ev){
-            case NO_ES_SU_TURNO -> {
-                vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
-            }
-
-            case NO_ES_TURNO_INICIAL -> {
-                vista.mostrarMenu(null, "NO ES EL TURNO INICIAL, NO PUEDE REALIZAR LA ACCION");
-            }
-
-            case DEALER_NO_CUMPLE -> {
-                vista.mostrarMenu(null, "EL DEALER NO CUMPLE LA CONDICION PARA REALIZAR ESTA ACCION...");
-            }
-
-            case MANO_YA_ASEGURADA -> {
-                vista.mostrarMenu(null, "USTED YA ASEGURO SU MANO, NO PUEDE VOLVER A REALIZAR ESTA ACCION...");
-            }
-
-            case SALDO_INSUFICIENTE -> {
-                vista.mostrarMenu(null, "NO POSEE EL SALDO SUFICIENTE PARA PODER REALIZAR ESTA ACCION...");
-            }
+        if(ev != Eventos.ACCION_REALIZADA){
+            vista.mostrarMenu(null, ev);
         }
     }
 
     private void splitearMano(){
-        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.SEPARAR_MANO, (Jugador) jugador, (ManoJugador) getManoActual());
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.SEPARAR_MANO, jugador);
 
-        switch (ev) {
-            case NO_ES_SU_TURNO -> {
-                vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
-            }
-
-            case NO_ES_TURNO_INICIAL -> {
-                vista.mostrarMenu(null, "NO ES EL TURNO INICIAL, NO PUEDE REALIZAR LA ACCION...");
-            }
-
-            case MANO_NO_CUMPLE -> {
-                vista.mostrarMenu(null, "LA MANO NO CUMPLE LA CONDICION PARA SPLITEAR, ACCION NO REALIZABLE...");
-            }
-
-            case SALDO_INSUFICIENTE -> {
-                vista.mostrarMenu(null, "NO TIENE EL SALDO SUFICIENTE PARA PODER REALIZAR LA ACCION...");
-            }
+        if(ev != Eventos.ACCION_REALIZADA){
+            vista.mostrarMenu(null, ev);
         }
     }
 
     private void doblarMano(){
-        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.DOBLAR_MANO, (Jugador) jugador, (ManoJugador) getManoActual());
+        Eventos ev = mesa.jugadorJuegaSuTurno(Accion.DOBLAR_MANO, jugador);
 
-        switch (ev) {
-            case NO_ES_SU_TURNO -> {
-                vista.mostrarMenu(null, "ACCION NO REALIZABLE! NO ES SU TURNO...");
-            }
-
-            case NO_ES_TURNO_INICIAL -> {
-                vista.mostrarMenu(null, "NO ES EL TURNO INICIAL, NO PUEDE REALIZAR LA ACCION...");
-            }
-
-            case SALDO_INSUFICIENTE -> {
-                vista.mostrarMenu(null, "NO TIENE EL SALDO SUFICIENTE PARA PODER REALIZAR LA ACCION...");
-            }
+        if(ev != Eventos.ACCION_REALIZADA){
+            vista.mostrarMenu(null, ev);
         }
     }
 
     private void sumarMano(double monto){
-        Eventos ev = mesa.apostarOtraMano((Jugador) jugador, monto);
+        Eventos ev = mesa.apostarOtraMano(jugador, monto);
 
-        switch (ev){
+        if(ev != Eventos.ACCION_REALIZADA){
+            vista.mostrarMenu(null, ev);
+        }
 
-            case JUGADOR_CONFIRMADO -> {
-                vista.mostrarMenu(null, "ACCION NO REALIZABLE... USTED YA CONFIRMO SU PARTICIPACION. INGRESE '-' PARA VOLVER");
-            }
-
-            case LA_MESA_YA_INICIO -> {
-                vista.mostrarMenu(null, "ACCION NO REALIZABLE... LA MESA YA INICIO, INGRESE '-' PARA VOLVER");
-            }
-
-            case SIN_LUGARES_DISPONIBLES -> {
-                vista.mostrarMenu(null, "NO HAY LUGARES DISPONIBLES, NO SE PUDO CREAR LA MANO, INGRESE '-' PARA VOVLER");
-            }
-
-            case SALDO_INSUFICIENTE -> {
-                vista.mostrarMenu(null, "SALDO INSUFICIENTE, INGRESE UN SALDO ACORDE AL MENCIONADO...");
-            }
-
-            case ACCION_REALIZADA -> {
-                vista.mostrarMenu(Menu.ACCIONES_MESA, null);
-            }
+        else{
+            vista.mostrarMenu(Menu.ACCIONES_MESA, null);
         }
     }
 
@@ -775,53 +579,42 @@ public class Controlador implements Observador{
         }
 
         else if(valor > 0 && valor <= manos.size()){
-            Eventos ev = mesa.retirarUnaMano((Jugador) jugador, (ManoJugador) manos.get(valor - 1));
+            Eventos ev = mesa.retirarUnaMano(jugador, valor - 1);
 
-            switch (ev){
-                case JUGADOR_CONFIRMADO -> {
-                    vista.mostrarMenu(null, "ACCION INVALIDA! USTED YA CONFIRMO...");
-                }
+            if(ev != Eventos.ACCION_REALIZADA){
+                vista.mostrarMenu(null, ev);
+            }
 
-                case LA_MESA_YA_INICIO -> {
-                    vista.mostrarMenu(null, "ACCION INVALIDA! LA MESA YA INICIO...");
-                }
-
-                case ULTIMA_MANO -> {
-                    vista.mostrarMenu(null, "ACCION INVALIDA! ES LA ULTIMA MANO QUE POSEE, NO PUEDE BORRARLA...");
-                }
-
-                case ACCION_REALIZADA -> {
-                    vista.mostrarMenu(Menu.INSCRIPCIONES, null);
-                }
+            else{
+                vista.mostrarMenu(Menu.INSCRIPCIONES, null);
             }
         }
 
         else{
-            vista.mostrarMenu(null, "INGRESO INVALIDO! DEBE INGRESAR UNA DE LAS OPCIONES ANTERIORMENTE MENCIONADAS...");
+            vista.mostrarMenu(null, Eventos.ACCION_INVALIDA);
         }
     }
 
     public void actualizar(Notificacion n){
-
         switch (n){
             case CAMBIO_ESTADO_MESA -> {
                 vista.mostrarMenu(Menu.CAMBIO_ESTADO, null);
 
                 EstadoDeLaMesa estado = mesa.getEstado();
                 if((estado == EstadoDeLaMesa.REPARTIENDO_CARTAS) || (estado == EstadoDeLaMesa.TURNO_DEALER)){
-                    mesa.confirmarParticipacion((Jugador) jugador);
+                    mesa.confirmarParticipacion(jugador);
                 }
             }
 
             case ACTUALIZAR_LISTA_ESPERA -> {
-                if((mesa == null) && (casino.miPosicionEnListaDeEspera((Jugador) jugador) != -1)){
+                if((mesa == null) && (casino.miPosicionEnListaDeEspera(jugador) != -1)){
                     vista.mostrarMenu(Menu.ACTUALIZAR_LISTA_ESPERA, null);
                 }
             }
 
-            case NUEVO_JUGADOR, JUGADOR_SE_FUE -> {
+            case NUEVO_JUGADOR, JUGADOR_SE_FUE, ACTUALIZAR_CONECTADOS-> {
                 if(mesa == null){
-                   vista.mostrarMenu(Menu.ACTUALIZAR_CONECTADOS, null);
+                    vista.mostrarMenu(Menu.ACTUALIZAR_CONECTADOS, null);
                 }
             }
 
@@ -834,7 +627,7 @@ public class Controlador implements Observador{
             }
 
             case JUGADOR_INGRESO_MESA -> {
-                mesa = casino.getMesa((Jugador) jugador);
+                setMesa(casino.getMesa(jugador));
                 vista.mostrarMenu(Menu.MESA, null);
             }
         }

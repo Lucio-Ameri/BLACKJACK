@@ -17,7 +17,7 @@ public class Dinero implements Serializable {
         return monto;
     }
 
-    public boolean puedoRealizarLaTransferencia(double cantidad){
+    public boolean puedoTransferir(double cantidad){
         return monto >= cantidad;
     }
 
@@ -26,6 +26,6 @@ public class Dinero implements Serializable {
     }
 
     public String descripcion(){
-        return String.format("$%.2f ", monto);
+        return String.format("$%.2f", monto);
     }
 }

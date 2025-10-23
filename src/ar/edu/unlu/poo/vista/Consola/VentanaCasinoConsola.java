@@ -210,7 +210,7 @@ public class VentanaCasinoConsola extends JFrame implements IVentana {
         int i = 1;
 
         for(IJugador j: conectados){
-            areaDeConectados.append(String.format("\t    %d.   %s \t SALDO ACTUAL: %.2f\n", i, j.getNombre(), j.getSaldoJugador()));
+            areaDeConectados.append(String.format("\t %d.  %s\n", i, j.datosPrincipales()));
             i++;
         }
     }
@@ -266,8 +266,9 @@ public class VentanaCasinoConsola extends JFrame implements IVentana {
         headerOpciones.setText("VALIDAR APUESTA:");
 
         areaDeOpciones.setText("");
-        areaDeOpciones.append("\tINGRESE UN UN MONTO NO NEGATIVO. CUALQUIER OTRO INGRESO SERA \n");
-        areaDeOpciones.append(String.format("\tTOMADO COMO INVALIDO. TENGA EN CUENTA QUE SU SALDO ACTUAL ES $%.2f\n", monto));
+        areaDeOpciones.append("\tINGRESE UN UN MONTO NO NEGATIVO Y >= A $1.0. CUALQUIER\n");
+        areaDeOpciones.append("\tOTRO INGRESO SERA TOMADO COMO INVALIDO. TENGA\n");
+        areaDeOpciones.append(String.format("\tEN CUENTA QUE SU SALDO ACTUAL ES $%.2f\n", monto));
         areaDeOpciones.append("\tY CUALQUIER VALOR MAYOR A ESTE TAMBIEN SERA INVALIDO...\n\n\n");
         areaDeOpciones.append("\t\t INGRESE '-' PARA VOLVER AL MENU DE ACCIONES.\n\n");
 

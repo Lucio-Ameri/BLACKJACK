@@ -9,12 +9,12 @@ import java.util.List;
 public abstract class Mano {
     private List<Carta> cartas;
     private EstadoDeLaMano estado;
-    private int totalMano;
+    private int total;
 
     public Mano(){
         this.cartas = new ArrayList<Carta>();
         this.estado = EstadoDeLaMano.TURNO_INICIAL;
-        this.totalMano = 0;
+        this.total = 0;
     }
 
     public List<Carta> getCartas(){
@@ -22,52 +22,49 @@ public abstract class Mano {
     }
 
     public List<ICarta> getCartasInterfaz(){
-        List<ICarta> cartasI = new ArrayList<ICarta>();
-
-        for(Carta c: cartas){
-            cartasI.add(c);
-        }
-
-        return cartasI;
+        return new ArrayList<ICarta>(cartas);
     }
 
     public EstadoDeLaMano getEstado(){
         return estado;
     }
 
-    public int getTotalMano(){
-        return totalMano;
-    }
-
-    protected void cambiarEstadoDeLaMano(EstadoDeLaMano en){
-        estado = en;
+    public int getTotal(){
+        return total;
     }
 
     public boolean turnoInicial(){
         return estado == EstadoDeLaMano.TURNO_INICIAL;
     }
 
+    protected void cambiarEstadoDeLaMano(EstadoDeLaMano nuevo){
+        estado = nuevo;
+    }
+
     protected void calcularTotal(){
-        int total = 0;
-        int cantAs = 0;
+        this.total = calcularTotalInterno();
+        actualizarEstadoDeLaMano(total);
+    }
+
+    private int calcularTotalInterno(){
+        int total = 0, totalAs = 0;
 
         for(Carta c: cartas){
             if(c.esAs()){
-                cantAs ++;
+                totalAs++;
             }
 
             total += c.getValorNumericoCarta();
         }
 
-        while (total > 21 && cantAs > 0){
-            cantAs --;
+        while (total > 21 && totalAs > 0){
+            totalAs--;
             total -= 10;
         }
 
-        totalMano = total;
-        actualizarEstadoDeLaMano(totalMano);
+        return total;
     }
 
-    protected abstract void actualizarEstadoDeLaMano(int totalMano);
+    protected abstract void actualizarEstadoDeLaMano(int total);
     public abstract void recibirCarta(Carta c);
 }
