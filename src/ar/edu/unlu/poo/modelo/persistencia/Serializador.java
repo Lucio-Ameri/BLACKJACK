@@ -13,7 +13,7 @@ public class Serializador {
 
 
     //----------------------------------- metodos genericos -----------------------------------
-    private static <T> void guardarObjeto(T objeto, String ruta){
+    public static <T> void guardarObjeto(T objeto, String ruta){
         try (ObjectOutputStream salida = new ObjectOutputStream(new FileOutputStream(ruta))) {
             salida.writeObject(objeto);
         } catch (IOException e) {
