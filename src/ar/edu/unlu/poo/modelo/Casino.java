@@ -227,11 +227,10 @@ public class Casino implements ICasino, Observador, Observado {
                     solicitudDeIngreso.remove(jugador);
                     observadoresListaDeEspera.remove(jugador);
 
-                    guardarJugador(jugador);
-
                     notificarObservadores(Notificacion.ACTUALIZAR_LISTA_ESPERA);
                 }
 
+                guardarJugador(jugador);
                 conectados.remove(jugador);
                 eliminarObservador(o);
 
