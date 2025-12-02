@@ -29,7 +29,7 @@ public class VentanaCasinoConsola extends JFrame implements IVentana {
 
     public VentanaCasinoConsola(){
         setTitle(".\t\t\t\t\t\t\t\t          VENTANA CASINO DESDE CONSOLA - LOBBY DEL JUEGO -");
-        setSize(1200, 800);
+        setSize(1200, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);

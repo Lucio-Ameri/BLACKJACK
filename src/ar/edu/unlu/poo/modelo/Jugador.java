@@ -84,7 +84,7 @@ public class Jugador implements IJugador, Serializable {
 
     @Override
     public String datosPrincipales(){
-        return String.format("JUGADOR ' %s '  -  SALDO: %s  -  MAXIMO HISTORICO: $%.2f\n\n", nombre, saldo.descripcion(), maximoHistorico);
+        return String.format("JUGADOR ' %s '  -  SALDO: %s  \n\t\t-  MAXIMO HISTORICO: $%.2f\n\n", nombre, saldo.descripcion(), maximoHistorico);
     }
 
     @Override

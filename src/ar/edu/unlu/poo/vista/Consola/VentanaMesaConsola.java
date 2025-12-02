@@ -33,7 +33,7 @@ public class VentanaMesaConsola extends JFrame implements IVentana {
 
     public VentanaMesaConsola(){
         setTitle(".\t\t\t\t\t\t\t\t          VENTANA MESA DESDE CONSOLA - SALA DE JUEGO -");
-        setSize(1300, 900);
+        setSize(1300, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
